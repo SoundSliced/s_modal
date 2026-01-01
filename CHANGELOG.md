@@ -1,6 +1,6 @@
 ## 1.0.1
 
-* Version 1.0.1
+* pubspec.yaml package's description updated
 
 # Changelog
 
