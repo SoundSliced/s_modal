@@ -49,7 +49,7 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  s_modal: ^1.0.1
+  s_modal: ^1.0.2
 ```
 
 Then run:
@@ -449,10 +449,10 @@ Built with:
 
 ## 📞 Support
 
-- 🐛 [Report bugs](https://github.com/SoundSliced/s_modal/issues)
-- 💡 [Request features](https://github.com/SoundSliced/s_modal/issues)
-- 📖 [Documentation](https://github.com/SoundSliced/s_modal)
+- 🐛 [Report bugs](https://github.com/1.0.2/s_modal/issues)
+- 💡 [Request features](https://github.com/1.0.2/s_modal/issues)
+- 📖 [Documentation](https://github.com/1.0.2/s_modal)
 
 ---
 
-Made with ❤️ by [Christophe Chanteur](https://github.com/SoundSliced)
+Made with ❤️ by [SoundSliced ltd](https://github.com/SoundSliced)

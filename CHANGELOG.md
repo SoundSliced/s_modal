@@ -1,3 +1,7 @@
+## 1.0.2
+
+* Version 1.0.2
+
 ## 1.0.1
 
 * pubspec.yaml package's description updated
@@ -139,7 +143,7 @@ The first stable release of `s_modal` - a comprehensive Flutter package for moda
 
 #### 🐛 Known Issues
 
-None at this time. Please report any issues on [GitHub](https://github.com/SoundSliced/s_modal/issues).
+None at this time. Please report any issues on [GitHub](https://github.com/1.0.2/s_modal/issues).
 
 #### 📝 Notes
 
@@ -167,4 +171,4 @@ Potential features for future releases:
 
 ---
 
-For more information, see the [README](README.md) or visit the [GitHub repository](https://github.com/SoundSliced/s_modal).
+For more information, see the [README](README.md) or visit the [GitHub repository](https://github.com/1.0.2/s_modal).
