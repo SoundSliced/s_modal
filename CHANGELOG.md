@@ -1,3 +1,7 @@
+## 1.0.1
+
+* Version 1.0.1
+
 # Changelog
 
 All notable changes to the s_modal package will be documented in this file.
