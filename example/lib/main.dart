@@ -39,6 +39,11 @@ class _MyHomePageState extends State<MyHomePage> {
   int _snackbarCounter = 1;
   double? _snackbarWidth = 260.0; // null = default width
 
+  // Snackbar Dismissal & Barrier Config
+  bool _snackbarIsDismissible = true; // default: true
+  Color _snackbarBarrierColor =
+      Colors.transparent; // default: none (transparent)
+
   // Duration Indicator Config
   bool _showDurationTimer = true;
   DurationIndicatorDirection _durationTimerDirection =
@@ -861,6 +866,57 @@ class _MyHomePageState extends State<MyHomePage> {
                               textAlign: TextAlign.right,
                             ),
                           ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Dismissible Toggle
+                      SwitchListTile(
+                        title: const Text('Dismissible'),
+                        subtitle: Text(
+                          _snackbarIsDismissible
+                              ? 'Can be swiped to dismiss'
+                              : 'Cannot be dismissed (no auto-dismiss)',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                        value: _snackbarIsDismissible,
+                        onChanged: (value) {
+                          setState(() => _snackbarIsDismissible = value);
+                        },
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Barrier Color Selector
+                      Text('Barrier Color',
+                          style: Theme.of(context).textTheme.titleSmall),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          _buildBarrierColorChip(
+                              Colors.transparent, 'None', true),
+                          const SizedBox(width: 4),
+                          _buildBarrierColorChip(
+                              Colors.black.withValues(alpha: 0.3),
+                              'Black',
+                              false),
+                          const SizedBox(width: 4),
+                          _buildBarrierColorChip(
+                              Colors.blue.withValues(alpha: 0.2),
+                              'Blue',
+                              false),
+                          const SizedBox(width: 4),
+                          _buildBarrierColorChip(
+                              Colors.red.withValues(alpha: 0.2), 'Red', false),
+                          const SizedBox(width: 4),
+                          _buildBarrierColorChip(
+                              Colors.green.withValues(alpha: 0.2),
+                              'Green',
+                              false),
                         ],
                       ),
                       const SizedBox(height: 24),
@@ -2788,7 +2844,7 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       position: Alignment.topCenter,
       displayMode: SnackbarDisplayMode.replace,
-      isSwipeable: true,
+      isDismissible: true,
       duration: null,
     );
 
@@ -2905,7 +2961,7 @@ class _MyHomePageState extends State<MyHomePage> {
           id: 'snackbar_with_buttons',
           builder: () => _buildInteractiveSnackbarContent(),
           position: Alignment.bottomCenter,
-          isSwipeable: true,
+          isDismissible: true,
         );
         break;
 
@@ -3086,6 +3142,8 @@ class _MyHomePageState extends State<MyHomePage> {
       durationTimerColor: _durationTimerColor,
       durationTimerDirection: _durationTimerDirection,
       width: _snackbarWidth,
+      isDismissible: _snackbarIsDismissible,
+      barrierColor: _snackbarBarrierColor,
     );
   }
 
@@ -3110,6 +3168,41 @@ class _MyHomePageState extends State<MyHomePage> {
           style: TextStyle(
             fontSize: 12,
             color: color == null
+                ? Colors.black87
+                : (color.computeLuminance() > 0.5
+                    ? Colors.black
+                    : Colors.white),
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBarrierColorChip(Color color, String label, bool isTransparent) {
+    final isSelected = _snackbarBarrierColor == color;
+    return GestureDetector(
+      onTap: () => setState(() => _snackbarBarrierColor = color),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: isTransparent
+              ? Colors.grey.shade200
+              : color.withValues(
+                  alpha: 1.0), // Show fully opaque for visibility
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? Theme.of(context).colorScheme.primary
+                : Colors.grey.shade400,
+            width: 2,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: isTransparent
                 ? Colors.black87
                 : (color.computeLuminance() > 0.5
                     ? Colors.black

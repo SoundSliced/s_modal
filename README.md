@@ -28,8 +28,9 @@ A comprehensive, production-ready Flutter package for displaying beautiful and h
 - 📍 Position anywhere on screen (9 alignment options + custom offset)
 - 📚 Multiple display modes: staggered, notification bubble, queued, replace
 - ⏱️ Auto-dismiss with visual duration indicator
-- 👆 Swipe-to-dismiss (horizontal and vertical)
-- 🎨 Rich customization with icons, colors, and actions
+- 👆 Swipe-to-dismiss (horizontal and vertical) with `isDismissible` control
+- 🎨 Rich customization with icons, colors, actions, and barrier colors
+- 🎭 Animated barrier color support with fade in/out
 
 ### 🚀 Advanced Features
 
@@ -49,7 +50,7 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  s_modal: ^1.0.2
+  s_modal: ^1.1.0
 ```
 
 Then run:
@@ -57,6 +58,8 @@ Then run:
 ```bash
 flutter pub get
 ```
+
+> **Note:** Version 1.1.0 includes a breaking change: `Modal.showSnackbar()`'s `isSwipeable` parameter has been renamed to `isDismissible` for consistency with other modal APIs. Simply rename the parameter in your code if you were using it.
 
 ## 🚀 Quick Start
 
@@ -148,6 +151,8 @@ Modal.showSnackbar(
   showDurationTimer: true,
   durationTimerDirection: DurationIndicatorDirection.leftToRight,
   durationTimerColor: Colors.cyan,
+  isDismissible: true, // Allow swipe-to-dismiss (default)
+  barrierColor: Colors.black.withOpacity(0.2), // Optional barrier
 );
 ```
 

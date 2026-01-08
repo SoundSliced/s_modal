@@ -71,6 +71,8 @@ class SnackbarModal extends StatefulWidget {
   final bool isDismissing;
 
   /// Whether the snackbar can be swiped to dismiss
+  /// Note: This is now controlled by the parent modal's isDismissable property.
+  /// If isDismissable is false, the snackbar cannot be swiped regardless of this setting.
   final bool isSwipeable;
 
   /// Duration before auto-dismiss (null means no auto-dismiss)
@@ -107,6 +109,10 @@ class SnackbarModal extends StatefulWidget {
   /// Each snackbar should have its own unique controller to avoid conflicts
   final SnackbarModalController? controller;
 
+  /// The color of the background barrier (defaults to transparent)
+  /// This barrier is displayed behind the snackbar and fades in/out with animations
+  final Color barrierColor;
+
   /// Creates a snackbar modal
   const SnackbarModal({
     super.key,
@@ -124,6 +130,7 @@ class SnackbarModal extends StatefulWidget {
     this.onTap,
     this.snackbarId,
     this.controller,
+    this.barrierColor = Colors.transparent,
   });
 
   @override
@@ -813,9 +820,10 @@ class _SnackbarModalState extends State<SnackbarModal>
     // Position the snackbar: use absolute positioning if offset provided, otherwise use alignment
     // CRITICAL: The Positioned/Align wrapper must be OUTSIDE the animation to work correctly
     // as a direct child of the parent Stack
+    Widget positionedSnackbar;
     if (widget.offset != null) {
       // Absolute positioning from top-left corner (ignores position/alignment)
-      return Positioned(
+      positionedSnackbar = Positioned(
         left: widget.offset!.dx,
         top: widget.offset!.dy,
         child: animatedContent,
@@ -823,11 +831,38 @@ class _SnackbarModalState extends State<SnackbarModal>
     } else {
       // Use Align instead of Positioned.fill so that each snackbar only takes up
       // as much space as needed, allowing taps to pass through to snackbars behind
-      return Align(
+      positionedSnackbar = Align(
         alignment: widget.position,
         child: animatedContent,
       );
     }
+
+    // Wrap with animated barrier color if provided and not transparent
+    if (widget.barrierColor != Colors.transparent) {
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          // Animated barrier color layer
+          AnimatedBuilder(
+            animation: _animationController,
+            builder: (context, child) {
+              // Fade the barrier with the snackbar animation
+              final barrierOpacity =
+                  _fadeAnimation.value * widget.barrierColor.opacity;
+              return IgnorePointer(
+                child: Container(
+                  color: widget.barrierColor.withValues(alpha: barrierOpacity),
+                ),
+              );
+            },
+          ),
+          // Snackbar on top of barrier
+          positionedSnackbar,
+        ],
+      );
+    }
+
+    return positionedSnackbar;
   }
 }
 

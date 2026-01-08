@@ -1,3 +1,13 @@
+## 1.1.0
+
+* **BREAKING**: Renamed `Modal.showSnackbar()` parameter `isSwipeable` to `isDismissible` for API consistency
+* Unified dismissal logic: `Modal.show()` with `modalType: ModalType.snackbar` now respects `isDismissible` consistently
+* Enhanced `isDismissible` behavior: when `false`, snackbars now automatically disable auto-dismiss timer
+* Improved `Modal.updateParams()` to properly handle `isDismissible` for snackbar updates
+* Added `barrierColor` parameter to snackbars with animated fade in/out support
+* Updated example app with new snackbar configurator controls (isDismissible toggle and barrierColor selector)
+* Updated documentation to reflect new API patterns
+
 ## 1.0.2
 
 * README updated

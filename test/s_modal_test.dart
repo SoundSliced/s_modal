@@ -211,7 +211,7 @@ void main() {
           text: 'Test notification',
           position: Alignment.topCenter,
           duration: const Duration(seconds: 3),
-          isSwipeable: true,
+          isDismissible: true,
           displayMode: SnackbarDisplayMode.staggered,
         ),
         returnsNormally,

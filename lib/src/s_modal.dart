@@ -626,9 +626,13 @@ class _ModalContent {
 
   /// Whether the snackbar can be dismissed by swiping
   ///
-  /// When true, allows the snackbar to be swiped away in the direction
-  /// perpendicular to its position (e.g., swipe down for bottom snackbars).
+  /// When true (and isDismissable is also true), allows the snackbar to be swiped away.
+  /// This parameter only controls the swipe gesture - for snackbars, use isDismissable
+  /// to control all dismissal methods including programmatic and swipe dismissal.
   /// Only applies to snackbar modals. Default is true.
+  ///
+  /// Note: For snackbars, isDismissable takes precedence. If isDismissable is false,
+  /// the snackbar cannot be swiped regardless of this setting.
   final bool isSwipeable;
 
   /// Duration before the snackbar auto-dismisses
@@ -791,14 +795,14 @@ class _ModalContent {
     this.modalType = ModalType.sheet,
     this.modalPosition = Alignment.bottomCenter,
     this.modalAnimationType = ModalAnimationType.fade,
-    this.isDismissable = true,
+    bool isDismissable = true,
     this.blockBackgroundInteraction = false,
     this.isDraggable = false,
     this.isExpandable = false,
     this.size,
     this.expandedPercentageSize = 85,
     this.contentPaddingByDragHandle = 35.0,
-    this.isSwipeable = true,
+    bool isSwipeable = true,
     Duration? autoDismissDuration,
     this.snackbarDisplayMode = SnackbarDisplayMode.staggered,
     this.maxStackedSnackbars = 3,
@@ -807,10 +811,19 @@ class _ModalContent {
     this.barrierColor = Colors.transparent,
     this.offset,
     SheetPosition? sheetPosition,
-  })  : autoDismissDuration =
-            snackbarDisplayMode == SnackbarDisplayMode.staggered
+  })  : isDismissable = isDismissable,
+        // For snackbars: isSwipeable should match isDismissable
+        // This ensures consistent behavior across all dismissal methods
+        isSwipeable =
+            (modalType == ModalType.snackbar ? isDismissable : isSwipeable),
+        autoDismissDuration = (
+            // For snackbars: nullify autoDismissDuration if isDismissable is false
+            // because a non-dismissible snackbar should not auto-dismiss
+            (modalType == ModalType.snackbar && !isDismissable)
                 ? null
-                : autoDismissDuration,
+                : (snackbarDisplayMode == SnackbarDisplayMode.staggered
+                    ? null
+                    : autoDismissDuration)),
         _internalId = _generateModalId(id),
         // Default sheetPosition to bottom if not provided
         sheetPosition = sheetPosition ?? SheetPosition.bottom {
@@ -857,7 +870,8 @@ class _ModalContent {
     Color iconColor = Colors.white,
     Alignment position = Alignment.topCenter,
     Duration? duration = const Duration(seconds: 4),
-    bool isSwipeable = true,
+    bool isDismissible = true,
+    Color barrierColor = Colors.transparent,
     String? id,
     double? width,
     Offset? offset,
@@ -927,8 +941,8 @@ class _ModalContent {
                   ],
                 ),
               ),
-              // Duration indicator at the bottom (only if duration is set and showDurationTimer is true)
-              if (showDurationTimer && duration != null)
+              // Duration indicator at the bottom (only if duration is set and showDurationTimer is true and isDismissible is true)
+              if (showDurationTimer && duration != null && isDismissible)
                 SnackbarDurationIndicator(
                   duration: duration,
                   color: durationTimerColor ?? Colors.amber,
@@ -943,11 +957,14 @@ class _ModalContent {
       modalType: ModalType.snackbar,
       modalPosition: position,
       autoDismissDuration: duration,
-      isSwipeable: isSwipeable,
+      isDismissable: isDismissible,
+      // For snackbars, isSwipeable is now controlled by isDismissible
+      isSwipeable: isDismissible,
       snackbarDisplayMode: displayMode,
       maxStackedSnackbars: maxStackedSnackbars,
       id: snackbarId, // Use the pre-generated ID
       snackbarWidth: width,
+      barrierColor: barrierColor,
       offset: offset,
       onDismissed: onDismissed,
       onTap: onTap,
@@ -1266,15 +1283,21 @@ class ModalBuilder extends StatefulWidget {
   /// designed for brief notifications and messages.
   ///
   /// Features:
-  /// - [isSwipeable]: Allow swipe-to-dismiss (default: true)
-  /// - [autoDismissDuration]: Auto-dismiss after duration (default: 4 seconds)
+  /// - [isDismissable]: Controls whether snackbar can be dismissed by swipe or tap (default: true)
+  /// - [autoDismissDuration]: Auto-dismiss after duration (default: 4 seconds, null if isDismissable is false)
   /// - [snackbarDisplayMode]: How multiple snackbars stack (staggered/notificationBubble)
   /// - [maxStackedSnackbars]: Max visible stacked snackbars (default: 3)
+  /// - [barrierColor]: Background barrier color (default: transparent)
+  ///
+  /// Note: For snackbars, isDismissable controls all dismissal methods including swipe.
+  /// If isDismissable is false, autoDismissDuration is treated as null.
   ///
   /// ```dart
   /// ModalBuilder.snackbar(
   ///   builder: () => MySnackbarContent(),
   ///   autoDismissDuration: Duration(seconds: 3),
+  ///   isDismissable: true,
+  ///   barrierColor: Colors.black.withValues(alpha: 0.2),
   ///   child: ElevatedButton(child: Text('Show Snackbar')),
   /// )
   /// ```
@@ -2072,7 +2095,8 @@ class Modal {
     // Common parameters
     Alignment position = Alignment.topCenter,
     Duration? duration = const Duration(seconds: 4),
-    bool isSwipeable = true,
+    bool isDismissible = true,
+    Color barrierColor = Colors.transparent,
     SnackbarDisplayMode displayMode = SnackbarDisplayMode.replace,
     String? id,
     double? width,
@@ -2114,7 +2138,8 @@ class Modal {
                       iconColor: iconColor,
                       position: position,
                       duration: effectiveDuration,
-                      isSwipeable: isSwipeable,
+                      isDismissible: isDismissible,
+                      barrierColor: barrierColor,
                       id: id,
                       width: width,
                       offset: offset,
@@ -2128,11 +2153,12 @@ class Modal {
         // Update other params
         modalPosition: position,
         autoDismissDuration: effectiveDuration,
-        isSwipeable: isSwipeable,
+        isDismissable: isDismissible,
         snackbarDisplayMode: displayMode,
         maxStackedSnackbars: maxStackedSnackbars,
         snackbarWidth: width,
         backgroundColor: backgroundColor,
+        barrierColor: barrierColor,
         offset: offset,
       );
       return;
@@ -2150,7 +2176,8 @@ class Modal {
         iconColor: iconColor,
         position: position,
         duration: effectiveDuration,
-        isSwipeable: isSwipeable,
+        isDismissible: isDismissible,
+        barrierColor: barrierColor,
         id: id,
         width: width,
         offset: offset,
@@ -2182,11 +2209,14 @@ class Modal {
         modalType: ModalType.snackbar,
         modalPosition: position,
         autoDismissDuration: effectiveDuration,
-        isSwipeable: isSwipeable,
+        isDismissable: isDismissible,
+        // For snackbars, isSwipeable is controlled by isDismissible
+        isSwipeable: isDismissible,
         snackbarDisplayMode: displayMode,
         maxStackedSnackbars: maxStackedSnackbars,
         id: id,
         snackbarWidth: width,
+        barrierColor: barrierColor,
         offset: offset,
         onDismissed: onDismissed,
         onTap: onTap,
@@ -4612,6 +4642,8 @@ class _ActivatorWidgetState extends State<_ActivatorWidget> {
                                       autoDismissDuration:
                                           snackbarContent.autoDismissDuration,
                                       offset: snackbarContent.offset,
+                                      barrierColor:
+                                          snackbarContent.barrierColor,
                                       onSwipeDismiss: (direction) {
                                         final isImmediate =
                                             direction == 'dismiss_immediate';
@@ -4782,6 +4814,8 @@ class _ActivatorWidgetState extends State<_ActivatorWidget> {
                                         autoDismissDuration:
                                             snackbarContent.autoDismissDuration,
                                         offset: snackbarContent.offset,
+                                        barrierColor:
+                                            snackbarContent.barrierColor,
                                         onSwipeDismiss: (direction) {
                                           final isImmediate =
                                               direction == 'dismiss_immediate';
@@ -5054,6 +5088,7 @@ Widget _buildCollapsedStaggeredView({
         isSwipeable: isFrontSnackbar ? snackbarContent.isSwipeable : false,
         autoDismissDuration: snackbarContent.autoDismissDuration,
         offset: snackbarContent.offset,
+        barrierColor: snackbarContent.barrierColor,
         onSwipeDismiss: (direction) {
           final isImmediate = direction == 'dismiss_immediate';
           Modal._removeSnackbarFromQueue(position, isImmediate);
