@@ -795,7 +795,7 @@ class _ModalContent {
     this.modalType = ModalType.sheet,
     this.modalPosition = Alignment.bottomCenter,
     this.modalAnimationType = ModalAnimationType.fade,
-    bool isDismissable = true,
+    this.isDismissable = true,
     this.blockBackgroundInteraction = false,
     this.isDraggable = false,
     this.isExpandable = false,
@@ -811,8 +811,7 @@ class _ModalContent {
     this.barrierColor = Colors.transparent,
     this.offset,
     SheetPosition? sheetPosition,
-  })  : isDismissable = isDismissable,
-        // For snackbars: isSwipeable should match isDismissable
+  })  : // For snackbars: isSwipeable should match isDismissable
         // This ensures consistent behavior across all dismissal methods
         isSwipeable =
             (modalType == ModalType.snackbar ? isDismissable : isSwipeable),

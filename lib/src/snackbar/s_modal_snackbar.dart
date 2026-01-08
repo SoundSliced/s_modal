@@ -848,7 +848,7 @@ class _SnackbarModalState extends State<SnackbarModal>
             builder: (context, child) {
               // Fade the barrier with the snackbar animation
               final barrierOpacity =
-                  _fadeAnimation.value * widget.barrierColor.opacity;
+                  _fadeAnimation.value * widget.barrierColor.a;
               return IgnorePointer(
                 child: Container(
                   color: widget.barrierColor.withValues(alpha: barrierOpacity),
