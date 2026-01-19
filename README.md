@@ -12,6 +12,7 @@ A comprehensive, production-ready Flutter package for displaying beautiful and h
 ### 🎯 Three Core Modal Types
 
 #### **Sheets** (Bottom, Top, Left, Right)
+
 - 📍 Slide in from any edge (bottom, top, left, right)
 - 📐 Expandable with drag-to-expand functionality
 - 🎨 Customizable size, colors, and borders
@@ -19,12 +20,14 @@ A comprehensive, production-ready Flutter package for displaying beautiful and h
 - 📱 Auto-sizing based on content
 
 #### **Dialogs**
+
 - 🎯 Centered positioning with optional offset
 - 🖱️ Optional draggable functionality
 - 🎭 Smooth fade and scale animations
 - 🎨 Fully customizable styling
 
 #### **Snackbars**
+
 - 📍 Position anywhere on screen (9 alignment options + custom offset)
 - 📚 Multiple display modes: staggered, notification bubble, queued, replace
 - ⏱️ Auto-dismiss with visual duration indicator
@@ -50,7 +53,7 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  s_modal: ^1.1.0
+  s_modal: ^2.0.0
 ```
 
 Then run:
@@ -59,23 +62,44 @@ Then run:
 flutter pub get
 ```
 
-> **Note:** Version 1.1.0 includes a breaking change: `Modal.showSnackbar()`'s `isSwipeable` parameter has been renamed to `isDismissible` for consistency with other modal APIs. Simply rename the parameter in your code if you were using it.
+> **⚠️ BREAKING CHANGES in v2.0.0:**
+>
+> - `Modal.activator()` removed → use `MaterialApp.builder: Modal.appBuilder` instead
+> - `Modal.initialiseActivator()` removed → no longer needed
+> - Several dependencies removed (`sizer`, `dart_helper_utils`, `soundsliced_tween_animation_builder`)
+> - See [CHANGELOG](CHANGELOG.md#200) for full migration guide
 
 ## 🚀 Quick Start
 
-### 1. Wrap your app with `Modal.activator`
+### 1. Add Modal.appBuilder to your MaterialApp
 
 ```dart
+void main() => runApp(const MyApp());
+
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Modal.activator(
-      child: MaterialApp(
-        home: MyHomePage(),
-      ),
+    return MaterialApp(
+      builder: Modal.appBuilder,  // Add this line!
+      home: MyHomePage(),
     );
   }
 }
+```
+
+**Optional:** For advanced customization:
+
+```dart
+MaterialApp(
+  builder: (context, child) => Modal.appBuilder(
+    context,
+    child,
+    backgroundColor: Colors.black,
+    borderRadius: BorderRadius.circular(24),
+    showDebugPrints: false,
+  ),
+  home: MyHomePage(),
+)
 ```
 
 ### 2. Show your first modal
@@ -372,26 +396,26 @@ counter.state++;
 
 ### Core Methods
 
-| Method | Description |
-|--------|-------------|
-| `Modal.show()` | Display any modal type with full customization |
-| `Modal.showSnackbar()` | Convenient snackbar with pre-styled options |
-| `Modal.dismiss()` | Dismiss the active modal |
-| `Modal.dismissById()` | Dismiss a specific modal by ID |
-| `Modal.dismissAll()` | Dismiss all modals |
-| `Modal.dismissByType()` | Dismiss all modals of a specific type |
-| `Modal.updateParams()` | Update modal properties in real-time |
+| Method                  | Description                                    |
+| ----------------------- | ---------------------------------------------- |
+| `Modal.show()`          | Display any modal type with full customization |
+| `Modal.showSnackbar()`  | Convenient snackbar with pre-styled options    |
+| `Modal.dismiss()`       | Dismiss the active modal                       |
+| `Modal.dismissById()`   | Dismiss a specific modal by ID                 |
+| `Modal.dismissAll()`    | Dismiss all modals                             |
+| `Modal.dismissByType()` | Dismiss all modals of a specific type          |
+| `Modal.updateParams()`  | Update modal properties in real-time           |
 
 ### State Checks
 
-| Property | Description |
-|----------|-------------|
-| `Modal.isActive` | Any modal is currently showing |
-| `Modal.isDialogActive` | A dialog is showing |
-| `Modal.isSheetActive` | A sheet is showing |
-| `Modal.isSnackbarActive` | A snackbar is showing |
-| `Modal.activeModalId` | ID of the current modal |
-| `Modal.allActiveModalIds` | List of all active modal IDs |
+| Property                  | Description                    |
+| ------------------------- | ------------------------------ |
+| `Modal.isActive`          | Any modal is currently showing |
+| `Modal.isDialogActive`    | A dialog is showing            |
+| `Modal.isSheetActive`     | A sheet is showing             |
+| `Modal.isSnackbarActive`  | A snackbar is showing          |
+| `Modal.activeModalId`     | ID of the current modal        |
+| `Modal.allActiveModalIds` | List of all active modal IDs   |
 
 ### Enums
 
@@ -418,6 +442,23 @@ SnackbarDisplayMode.replace
 DurationIndicatorDirection.leftToRight
 DurationIndicatorDirection.rightToLeft
 ```
+
+## 📦 Dependencies
+
+Version 2.0.0 has minimal dependencies:
+
+- `states_rebuilder_extended` ^1.0.3 - State management
+- `assorted_layout_widgets` ^11.0.0 - Layout utilities
+- `flutter_animate` ^4.5.2 - Smooth animations
+- `soundsliced_dart_extensions` ^1.0.1 - Dart extensions
+- `s_bounceable` ^2.0.0 - Bounce interactions
+- `s_ink_button` ^1.1.0 - Ink button widget
+
+**Removed in v2.0:**
+
+- ~~`sizer`~~ - Now uses native MediaQuery
+- ~~`dart_helper_utils`~~ - Unnecessary dependency
+- ~~`soundsliced_tween_animation_builder`~~ - Built-in alternatives
 
 ## 🎓 Examples
 
@@ -448,9 +489,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🙏 Acknowledgments
 
 Built with:
+
 - [states_rebuilder_extended](https://pub.dev/packages/states_rebuilder_extended) - State management
 - [flutter_animate](https://pub.dev/packages/flutter_animate) - Smooth animations
-- [sizer](https://pub.dev/packages/sizer) - Responsive sizing
 
 ## 📞 Support
 

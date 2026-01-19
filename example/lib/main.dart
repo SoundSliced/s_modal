@@ -3,30 +3,34 @@ import 'package:s_ink_button/s_ink_button.dart';
 import 'package:s_modal/s_modal.dart';
 import 'package:states_rebuilder/states_rebuilder.dart';
 
-void main() {
-  runApp(const MyApp());
-}
+void main() => runApp(const MyApp());
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Modal.activator(
-      child: MaterialApp(
-        title: 'S Modal Example',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-          useMaterial3: true,
-        ),
-        home: const MyHomePage(),
+    return MaterialApp(
+      title: 's_modal Example',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: const MyHomePage(title: 's_modal Example'),
+      builder: (context, child) => Modal.appBuilder(
+        context,
+        child,
+        backgroundColor: Colors.black,
+        borderRadius: BorderRadius.circular(24),
+        showDebugPrints: false,
       ),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key});
+  const MyHomePage({super.key, required this.title});
+
+  final String title;
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -85,7 +89,7 @@ class _MyHomePageState extends State<MyHomePage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: const Text('S Modal Package Examples'),
+        title: Text(widget.title),
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -783,7 +787,7 @@ class _MyHomePageState extends State<MyHomePage> {
                             const Text('Direction: '),
                             const SizedBox(width: 8),
                             SizedBox(
-                              width: 100,
+                              width: 110,
                               child: ChoiceChip(
                                 label: const Text('← Left'),
                                 selected: _durationTimerDirection ==
@@ -798,7 +802,7 @@ class _MyHomePageState extends State<MyHomePage> {
                             ),
                             const SizedBox(width: 8),
                             SizedBox(
-                              width: 100,
+                              width: 110,
                               child: ChoiceChip(
                                 label: const Text('Right →'),
                                 selected: _durationTimerDirection ==

@@ -2,6 +2,10 @@
 
 part of 's_modal_libs.dart';
 
+/// Global flag to control debug print visibility
+/// Set via Modal.appBuilder's showDebugPrints parameter
+bool _showDebugPrints = false;
+
 /// Modal System Implementation
 ///
 /// A flexible, modular system for displaying various types of modal overlays
@@ -217,7 +221,9 @@ void _registerSnackbarController(
       _snackbarControllersRegistry.state);
   registry[id] = controller;
   _snackbarControllersRegistry.state = registry;
-  // debugPrint('SnackbarController Registry: registered controller for id=$id');
+  if (_showDebugPrints) {
+    debugPrint('SnackbarController Registry: registered controller for id=$id');
+  }
 }
 
 /// Unregisters a snackbar's controller from the registry
@@ -226,7 +232,10 @@ void _unregisterSnackbarController(String id) {
       _snackbarControllersRegistry.state);
   registry.remove(id);
   _snackbarControllersRegistry.state = registry;
-  // debugPrint('SnackbarController Registry: unregistered controller for id=$id');
+  if (_showDebugPrints) {
+    debugPrint(
+        'SnackbarController Registry: unregistered controller for id=$id');
+  }
 }
 
 /// Gets a snackbar's controller from the registry
@@ -256,8 +265,10 @@ void _registerModal(String id, ModalType type) {
   final registry = Map<String, ModalType>.from(_modalRegistry.state);
   registry[id] = type;
   _modalRegistry.state = registry;
-  // debugPrint(
-  //     'Modal Registry: registered $type with id=$id. Active: ${registry.keys.toList()}');
+  if (_showDebugPrints) {
+    debugPrint(
+        'Modal Registry: registered $type with id=$id. Active: ${registry.keys.toList()}');
+  }
 }
 
 /// Unregisters a modal from the registry
@@ -265,9 +276,9 @@ void _unregisterModal(String id) {
   final registry = Map<String, ModalType>.from(_modalRegistry.state);
   final type = registry.remove(id);
   _modalRegistry.state = registry;
-  if (type != null) {
-    // debugPrint(
-    //     'Modal Registry: unregistered $type with id=$id. Active: ${registry.keys.toList()}');
+  if (type != null && _showDebugPrints) {
+    debugPrint(
+        'Modal Registry: unregistered $type with id=$id. Active: ${registry.keys.toList()}');
   }
 }
 
@@ -278,8 +289,10 @@ void _unregisterModals(List<String> ids) {
     registry.remove(id);
   }
   _modalRegistry.state = registry;
-  // debugPrint(
-  //     'Modal Registry: unregistered ${ids.length} modals. Active: ${registry.keys.toList()}');
+  if (_showDebugPrints) {
+    debugPrint(
+        'Modal Registry: unregistered ${ids.length} modals. Active: ${registry.keys.toList()}');
+  }
 }
 
 /// Gets the type of a modal by its ID, or null if not found
@@ -378,7 +391,9 @@ void _removeSnackbarAfterDismiss(
   onDismissed?.call();
   snackbar.onDismissed?.call();
 
-  // debugPrint('_removeSnackbarAfterDismiss: removed snackbar $uniqueId');
+  if (_showDebugPrints) {
+    debugPrint('_removeSnackbarAfterDismiss: removed snackbar $uniqueId');
+  }
 }
 
 /// Current stack index for the active snackbar
@@ -1464,10 +1479,9 @@ class _ModalBuilderState extends State<ModalBuilder> {
 /// ```dart
 /// @override
 /// Widget build(BuildContext context) {
-///   return Modal.activator(
-///     child: MaterialApp(
-///       home: MyHomePage(),
-///     ),
+///   return MaterialApp(
+///     builder: Modal.appBuilder,
+///     home: MyHomePage(),
 ///   );
 /// }
 /// ```
@@ -1475,6 +1489,49 @@ class _ModalBuilderState extends State<ModalBuilder> {
 const Offset _noOffsetChange = Offset(double.infinity, double.infinity);
 
 class Modal {
+  //==================================================
+  // Internal installation / bootstrap
+  //==================================================
+
+  /// Hook for `MaterialApp.builder` / `WidgetsApp.builder`.
+  ///
+  /// This is the supported way to ensure `_ActivatorWidget` becomes a **parent**
+  /// of your app's widget tree (no overlays, no runtime re-parenting).
+  ///
+  /// Usage:
+  /// ```dart
+  /// MaterialApp(
+  ///   builder: Modal.appBuilder,
+  ///   home: ...,
+  /// )
+  /// ```
+  ///
+  static Widget appBuilder(
+    /// The build context of the app
+    BuildContext context,
+
+    /// The child widget: the app background behind the modal
+    Widget? child, {
+    /// The border radius to apply to the modal's corners when [ModalType] is [ModalType.sheet] and when a sheet is active/showing
+    BorderRadius? borderRadius,
+
+    /// Whether the modal background should bounce when the dismiss barrier is tapped
+    bool shouldBounceOnTap = true,
+
+    /// The background color when [ModalType.sheet] sheet is active/showing, when the background layer is scaled
+    Color backgroundColor = Colors.black,
+
+    /// Whether to show debug prints for modal events
+    bool showDebugPrints = false,
+  }) {
+    _showDebugPrints = showDebugPrints;
+    return _ActivatorWidget(
+      borderRadius: borderRadius ?? BorderRadius.zero,
+      shouldBounce: shouldBounceOnTap,
+      backgroundColor: backgroundColor,
+      child: child ?? const SizedBox.shrink(),
+    );
+  }
   //--------------------------------------------------//
   // Configuration Parameters
   //--------------------------------------------------//
@@ -1526,15 +1583,15 @@ class Modal {
   //--------------------------------------------------//
 
   /// Returns true if a dialog is currently active
-  static bool get isDialogActive => _dialogController.state.isNotNull;
+  static bool get isDialogActive => _dialogController.state != null;
 
   /// Returns true if a bottom sheet is currently active
-  static bool get isSheetActive => _sheetController.state.isNotNull;
+  static bool get isSheetActive => _sheetController.state != null;
 
   /// Returns true if a side sheet is currently active
   /// Side sheets use the sheet controller with left/right positions
   static bool get isSideSheetActive {
-    if (_sheetController.state.isNull) return false;
+    if (_sheetController.state == null) return false;
     final position = _sheetController.state!.sheetPosition;
     return position == SheetPosition.left || position == SheetPosition.right;
   }
@@ -1542,7 +1599,7 @@ class Modal {
   /// Returns true if a top sheet is currently active
   /// Top sheets use the sheet controller with top position
   static bool get isTopSheetActive {
-    if (_sheetController.state.isNull) return false;
+    if (_sheetController.state == null) return false;
     final position = _sheetController.state!.sheetPosition;
     return position == SheetPosition.top;
   }
@@ -1550,14 +1607,14 @@ class Modal {
   /// Returns true if a bottom sheet is currently active
   /// Bottom sheets use the sheet controller with bottom position
   static bool get isBottomSheetActive {
-    if (_sheetController.state.isNull) return false;
+    if (_sheetController.state == null) return false;
     final position = _sheetController.state!.sheetPosition;
     return position == SheetPosition.bottom;
   }
 
   /// Returns true if any snackbars are currently active
   static bool get isSnackbarActive =>
-      _snackbarController.state.isNotNull ||
+      _snackbarController.state != null ||
       _snackbarQueueNotifier.state.isNotEmpty;
 
   /// Returns true if a dialog dismissal is in progress
@@ -1621,7 +1678,7 @@ class Modal {
   /// Returns `true` if any modal type is active, `false` otherwise.
   /// For type-specific checks, use isDialogActive, isBottomSheetActive, isSideSheetActive, or isSnackbarActive.
   static bool get isActive =>
-      _activeModalController.state.isNotNull ||
+      _activeModalController.state != null ||
       isDialogActive ||
       isSheetActive ||
       isSnackbarActive;
@@ -1795,6 +1852,7 @@ class Modal {
   /// );
   /// ```
   static void show({
+    BuildContext? context,
     required ModalWidgetBuilder builder,
     String? id,
     ModalType modalType = ModalType.sheet,
@@ -1852,16 +1910,18 @@ class Modal {
       onTap: onTap,
     );
 
-    _showInternal(content);
+    _showInternal(content, context: context);
   }
 
   /// Internal method that handles the actual modal display logic
   ///
   /// This method is used by both the new simplified API and legacy code.
-  static void _showInternal(_ModalContent content) {
+  static void _showInternal(_ModalContent content, {BuildContext? context}) {
     final modalContent = content;
-    // debugPrint(
-    //     'Modal.show called: type=${modalContent.modalType}, id=${modalContent.uniqueId}');
+    if (_showDebugPrints) {
+      debugPrint(
+          'Modal.show called: type=${modalContent.modalType}, id=${modalContent.uniqueId}');
+    }
 
     // AUTO-UPDATE FEATURE: Check if a modal of the same type with the same user-provided ID
     // is already active. If so, use updateParams instead of replacing the modal.
@@ -1899,8 +1959,10 @@ class Modal {
 
       // If we found an existing modal with the same ID and type, update it instead
       if (existingModal != null) {
-        debugPrint(
-            'Modal.show: Found existing modal with same ID (${modalContent.id}), using updateParams instead');
+        if (_showDebugPrints) {
+          debugPrint(
+              'Modal.show: Found existing modal with same ID (${modalContent.id}), using updateParams instead');
+        }
         Modal.updateParams(
           id: existingModal.uniqueId,
           builder: modalContent.builder,
@@ -2080,6 +2142,7 @@ class Modal {
   /// );
   /// ```
   static void showSnackbar({
+    BuildContext? context,
     // Simplified API parameters
     String? text,
     IconData? prefixIcon,
@@ -2109,8 +2172,10 @@ class Modal {
         DurationIndicatorDirection.leftToRight,
     bool handleDurationTimerManually = false,
   }) {
-    // debugPrint(
-    //     'Modal.showSnackbar called: text=$text, id=$id, position=$position');
+    if (_showDebugPrints) {
+      debugPrint(
+          'Modal.showSnackbar called: text=$text, id=$id, position=$position');
+    }
 
     // For staggered and notificationBubble modes, snackbars have infinite duration
     // Only queued and replace modes have auto-dismiss duration
@@ -2496,14 +2561,18 @@ class Modal {
   /// This is used when `Dismissible` has already animated the snackbar out.
   static void _removeSnackbarFromQueue(
       [Alignment? position, bool immediate = false]) {
-    // debugPrint(
-    //     'Modal._removeSnackbarFromQueue: position=$position, immediate=$immediate, isDismissing=$isDismissing, isBottomSheetDismissing=$isSheetDismissing, isDialogDismissing=$isDialogDismissing');
+    if (_showDebugPrints) {
+      debugPrint(
+          'Modal._removeSnackbarFromQueue: position=$position, immediate=$immediate, isDismissing=${Modal.isSnackbarDismissing}, isBottomSheetDismissing=${Modal.isSheetDismissing}, isDialogDismissing=${Modal.isDialogDismissing}');
+    }
 
     // Guard: If a dialog or bottom sheet is currently dismissing, defer snackbar removal
     // to avoid state conflicts. The snackbar can be removed after the dismissal completes.
     if (Modal.isSheetDismissing || Modal.isDialogDismissing) {
-      // debugPrint(
-      //     'Modal._removeSnackbarFromQueue: deferred - another modal is dismissing');
+      if (_showDebugPrints) {
+        debugPrint(
+            'Modal._removeSnackbarFromQueue: deferred - another modal is dismissing');
+      }
       // Schedule removal after dismissal completes
       _snackbarRetryTimer?.cancel();
       _snackbarRetryTimer = Timer(const Duration(milliseconds: 500), () {
@@ -2681,8 +2750,10 @@ class Modal {
   /// staggered view, where any snackbar in the list can be dismissed.
   static void _removeSnackbarByIdFromQueue(
       String snackbarId, Alignment position) {
-    // debugPrint(
-    //     'Modal._removeSnackbarByIdFromQueue: id=$snackbarId, position=$position');
+    if (_showDebugPrints) {
+      debugPrint(
+          'Modal._removeSnackbarByIdFromQueue: id=$snackbarId, position=$position');
+    }
 
     final currentQueueMap = Modal.snackbarQueue.state;
     final positionQueue = currentQueueMap[position] ?? [];
@@ -2867,7 +2938,9 @@ class Modal {
     }
 
     if (targetContent == null) {
-      // debugPrint('Modal.updateParams: No modal found with ID=$id');
+      if (_showDebugPrints) {
+        debugPrint('Modal.updateParams: No modal found with ID=$id');
+      }
       return;
     }
 
@@ -3067,8 +3140,10 @@ class Modal {
           dismissedIds.add(snackbar.uniqueId);
         }
       }
-      debugPrint(
-          'Modal.dismissAllSnackbars: dismissing ${dismissedIds.length} snackbars: $dismissedIds');
+      if (_showDebugPrints) {
+        debugPrint(
+            'Modal.dismissAllSnackbars: dismissing ${dismissedIds.length} snackbars: $dismissedIds');
+      }
 
       // Unregister all snackbars from registry
       _unregisterModals(dismissedIds);
@@ -3084,8 +3159,10 @@ class Modal {
         Modal.controller.refresh();
       }
 
-      debugPrint(
-          'Modal.dismissAllSnackbars: completed dismissing IDs: $dismissedIds');
+      if (_showDebugPrints) {
+        debugPrint(
+            'Modal.dismissAllSnackbars: completed dismissing IDs: $dismissedIds');
+      }
     }
   }
 
@@ -3135,7 +3212,9 @@ class Modal {
   /// Modal.dismissAll(onDismissed: () => print('All modals dismissed'));
   /// ```
   static void dismissAll({VoidCallback? onDismissed}) {
-    // debugPrint('Modal.dismissAll: dismissing all modals');
+    if (_showDebugPrints) {
+      debugPrint('Modal.dismissAll: dismissing all modals');
+    }
 
     // Web/engine safety: Avoid mutating the overlay/widget tree in the middle of
     // a frame/scheduler callback. This prevents rare "Trying to render a disposed
@@ -3195,7 +3274,9 @@ class Modal {
   /// ```
   Future<List<String>> dismissByIds(List<String> ids,
       {VoidCallback? onDismissed}) async {
-    debugPrint('Modal.dismissByIds: dismissing IDs: $ids');
+    if (_showDebugPrints) {
+      debugPrint('Modal.dismissByIds: dismissing IDs: $ids');
+    }
     final dismissedIds = <String>[];
 
     for (final id in ids) {
@@ -3206,7 +3287,9 @@ class Modal {
     }
 
     onDismissed?.call();
-    debugPrint('Modal.dismissByIds: successfully dismissed: $dismissedIds');
+    if (_showDebugPrints) {
+      debugPrint('Modal.dismissByIds: successfully dismissed: $dismissedIds');
+    }
     return dismissedIds;
   }
 
@@ -3410,19 +3493,26 @@ class Modal {
       final targetSheetId = _sheetController.state?.uniqueId;
       final sheetId = _sheetController.state?.id;
       if (targetSheetId == null) {
-        debugPrint(
-            'Modal.dismissBottomSheet: WARNING - No bottom sheet ID found, aborting');
+        if (_showDebugPrints) {
+          debugPrint(
+              'Modal.dismissBottomSheet: WARNING - No bottom sheet ID found, aborting');
+        }
         return;
       }
 
       // If an ID was provided, verify it matches before dismissing
       if (id != null && id != sheetId && id != targetSheetId) {
-        debugPrint(
-            'Modal.dismissBottomSheet: ID mismatch. Requested=$id, Active=$sheetId. Aborting.');
+        if (_showDebugPrints) {
+          debugPrint(
+              'Modal.dismissBottomSheet: ID mismatch. Requested=$id, Active=$sheetId. Aborting.');
+        }
         return;
       }
 
-      debugPrint('Modal.dismissBottomSheet: targeting sheet ID=$targetSheetId');
+      if (_showDebugPrints) {
+        debugPrint(
+            'Modal.dismissBottomSheet: targeting sheet ID=$targetSheetId');
+      }
       Modal.isDismissing = true;
       _sheetDismissingNotifier.state = true;
 
@@ -3467,34 +3557,44 @@ class Modal {
         // VALIDATE: Check if the sheet ID still matches what we intended to dismiss
         final currentSheetId = _sheetController.state?.uniqueId;
         if (currentSheetId != null && currentSheetId != targetSheetId) {
-          debugPrint(
-              'Modal.dismissBottomSheet: WARNING - Sheet ID changed during animation! '
-              'Target=$targetSheetId, Current=$currentSheetId. Aborting cleanup.');
+          if (_showDebugPrints) {
+            debugPrint(
+                'Modal.dismissBottomSheet: WARNING - Sheet ID changed during animation! '
+                'Target=$targetSheetId, Current=$currentSheetId. Aborting cleanup.');
+          }
           Modal.isDismissing = false;
           _sheetDismissingNotifier.state = false;
           return;
         }
 
-        debugPrint('Modal.dismissBottomSheet: cleanup for ID=$targetSheetId');
+        if (_showDebugPrints) {
+          debugPrint('Modal.dismissBottomSheet: cleanup for ID=$targetSheetId');
+        }
         _resetHeightCallback?.call();
         _modalSheetHeightNotifier.state = 0.0;
         _modalDragOffsetNotifier.state = 0.0;
 
         // Run callbacks after cleanup
-        debugPrint('Modal.dismissBottomSheet: running callbacks');
+        if (_showDebugPrints) {
+          debugPrint('Modal.dismissBottomSheet: running callbacks');
+        }
         onDismissed?.call();
         _sheetController.state?.onDismissed?.call();
 
         final currentQueue = _snackbarQueueNotifier.state;
-        debugPrint(
-            'Modal.dismissBottomSheet: snackbar queue has ${currentQueue.keys.length} positions');
+        if (_showDebugPrints) {
+          debugPrint(
+              'Modal.dismissBottomSheet: snackbar queue has ${currentQueue.keys.length} positions');
+        }
 
         // IMPORTANT: Do NOT clear the snackbar queue when dismissing a bottom sheet.
         // Snackbars are independent modals and should remain visible.
         // Only update the active modal controller to point to a remaining snackbar if any.
         if (currentQueue.isNotEmpty) {
-          debugPrint(
-              'Modal.dismissBottomSheet: snackbar queue not empty, preserving snackbars');
+          if (_showDebugPrints) {
+            debugPrint(
+                'Modal.dismissBottomSheet: snackbar queue not empty, preserving snackbars');
+          }
           // Find the first position with snackbars and make it the active modal
           Alignment? positionWithContent;
           for (final position in currentQueue.keys) {
@@ -3582,16 +3682,20 @@ class Modal {
           content?.sheetPosition == SheetPosition.right;
 
       if (!isSideSheet) {
-        debugPrint(
-            'Modal.dismissSideSheet: Active bottom sheet is not a side sheet. Aborting.');
+        if (_showDebugPrints) {
+          debugPrint(
+              'Modal.dismissSideSheet: Active bottom sheet is not a side sheet. Aborting.');
+        }
         return;
       }
 
       // Call the unified dismiss method
       await dismissBottomSheet(id: id, onDismissed: onDismissed);
     } else {
-      debugPrint(
-          'Modal.dismissSideSheet: No side sheet active or already dismissing');
+      if (_showDebugPrints) {
+        debugPrint(
+            'Modal.dismissSideSheet: No side sheet active or already dismissing');
+      }
     }
   }
 
@@ -3620,16 +3724,20 @@ class Modal {
       final isTopSheet = content?.sheetPosition == SheetPosition.top;
 
       if (!isTopSheet) {
-        debugPrint(
-            'Modal.dismissTopSheet: Active bottom sheet is not a top sheet. Aborting.');
+        if (_showDebugPrints) {
+          debugPrint(
+              'Modal.dismissTopSheet: Active bottom sheet is not a top sheet. Aborting.');
+        }
         return;
       }
 
       // Call the unified dismiss method
       await dismissBottomSheet(id: id, onDismissed: onDismissed);
     } else {
-      debugPrint(
-          'Modal.dismissTopSheet: No top sheet active or already dismissing');
+      if (_showDebugPrints) {
+        debugPrint(
+            'Modal.dismissTopSheet: No top sheet active or already dismissing');
+      }
     }
   }
 
@@ -3648,8 +3756,10 @@ class Modal {
       // CAPTURE IDs of all snackbars being dismissed at this position
       final dismissedIds =
           currentQueueMap[position]!.map((s) => s.uniqueId).toList();
-      debugPrint(
-          'Modal.dismissSnackbarAtPosition: position=$position, dismissing IDs: $dismissedIds');
+      if (_showDebugPrints) {
+        debugPrint(
+            'Modal.dismissSnackbarAtPosition: position=$position, dismissing IDs: $dismissedIds');
+      }
 
       final updatedQueueMap =
           Map<Alignment, List<_ModalContent>>.from(currentQueueMap);
@@ -3670,8 +3780,10 @@ class Modal {
         Modal.controller.refresh();
       }
 
-      debugPrint(
-          'Modal.dismissSnackbarAtPosition: completed dismissing IDs: $dismissedIds');
+      if (_showDebugPrints) {
+        debugPrint(
+            'Modal.dismissSnackbarAtPosition: completed dismissing IDs: $dismissedIds');
+      }
     }
   }
 
@@ -3691,7 +3803,9 @@ class Modal {
   /// Modal.dismissByType(ModalType.dialog);
   /// ```
   static Future<void> dismissByType(ModalType type) async {
-    debugPrint('Modal.dismissByType called: $type');
+    if (_showDebugPrints) {
+      debugPrint('Modal.dismissByType called: $type');
+    }
     switch (type) {
       case ModalType.snackbar:
         dismissAllSnackbars();
@@ -3748,14 +3862,18 @@ class Modal {
   /// ```
   static Future<bool> dismissById(String id,
       {VoidCallback? onDismissed}) async {
-    debugPrint('Modal.dismissById called: id=$id');
+    if (_showDebugPrints) {
+      debugPrint('Modal.dismissById called: id=$id');
+    }
 
     // Check if this ID matches the active dialog
     if (Modal.isDialogActive && _dialogController.state != null) {
       final dialog = _dialogController.state!;
       if (dialog.id == id || dialog.uniqueId == id) {
-        debugPrint(
-            'Modal.dismissById: found dialog with ID=$id. Dismissing...');
+        if (_showDebugPrints) {
+          debugPrint(
+              'Modal.dismissById: found dialog with ID=$id. Dismissing...');
+        }
         await dismissDialog(onDismissed: onDismissed);
         return true;
       }
@@ -3765,8 +3883,10 @@ class Modal {
     if (Modal.isSheetActive && _sheetController.state != null) {
       final sheet = _sheetController.state!;
       if (sheet.id == id || sheet.uniqueId == id) {
-        debugPrint(
-            'Modal.dismissById: found bottom sheet with ID=$id. Dismissing...');
+        if (_showDebugPrints) {
+          debugPrint(
+              'Modal.dismissById: found bottom sheet with ID=$id. Dismissing...');
+        }
         await dismissBottomSheet(onDismissed: onDismissed);
         return true;
       }
@@ -3776,8 +3896,10 @@ class Modal {
     if (Modal.isSideSheetActive && _sideSheetController.state != null) {
       final sheet = _sideSheetController.state!;
       if (sheet.id == id || sheet.uniqueId == id) {
-        debugPrint(
-            'Modal.dismissById: found side sheet with ID=$id. Dismissing...');
+        if (_showDebugPrints) {
+          debugPrint(
+              'Modal.dismissById: found side sheet with ID=$id. Dismissing...');
+        }
         await dismissSideSheet(onDismissed: onDismissed);
         return true;
       }
@@ -3799,8 +3921,10 @@ class Modal {
       if (matchIndex >= 0) {
         found = true;
         final snackbar = queueAtPosition[matchIndex];
-        debugPrint(
-            'Modal.dismissById: found snackbar with ID=$id (uniqueId=${snackbar.uniqueId}) at position=$position. Removing...');
+        if (_showDebugPrints) {
+          debugPrint(
+              'Modal.dismissById: found snackbar with ID=$id (uniqueId=${snackbar.uniqueId}) at position=$position. Removing...');
+        }
 
         // Check if this is the currently active snackbar
         final isActiveSnackbar =
@@ -3813,8 +3937,10 @@ class Modal {
 
           if (controller != null && controller.isAttached) {
             // Use imperative dismiss via controller
-            debugPrint(
-                'Modal.dismissById: Using controller to dismiss snackbar ${snackbar.uniqueId}');
+            if (_showDebugPrints) {
+              debugPrint(
+                  'Modal.dismissById: Using controller to dismiss snackbar ${snackbar.uniqueId}');
+            }
 
             final completer = Completer<void>();
             controller.playDismissAnimation(
@@ -3833,8 +3959,10 @@ class Modal {
             await completer.future;
           } else {
             // Fallback: Use the old reactive approach
-            debugPrint(
-                'Modal.dismissById: Controller not found, using fallback for snackbar ${snackbar.uniqueId}');
+            if (_showDebugPrints) {
+              debugPrint(
+                  'Modal.dismissById: Controller not found, using fallback for snackbar ${snackbar.uniqueId}');
+            }
             _setSnackbarDismissing(snackbar.uniqueId, true);
 
             await Future.delayed(0.3.sec, () {
@@ -3867,65 +3995,18 @@ class Modal {
           snackbar.onDismissed?.call();
         }
 
-        debugPrint('Modal.dismissById: successfully dismissed ID=$id');
+        if (_showDebugPrints) {
+          debugPrint('Modal.dismissById: successfully dismissed ID=$id');
+        }
         return true;
       }
     }
 
-    debugPrint(
-        'Modal.dismissById: ID=$id not found in any active modal or snackbar queue');
+    if (_showDebugPrints) {
+      debugPrint(
+          'Modal.dismissById: ID=$id not found in any active modal or snackbar queue');
+    }
     return false;
-  }
-
-  //--------------------------------------------------//
-  // Setup and Integration
-
-  /// Creates the modal system container widget
-  ///
-  /// This widget should be placed high in your widget tree,
-  /// typically wrapping your MaterialApp or a large portion of your UI.
-  /// It creates the overlay container where modals will be rendered.
-  ///
-  /// Parameters:
-  /// - `child`: The widget that will be wrapped by the modal system.
-  ///   This is typically your main app content.
-  ///
-  /// Returns:
-  /// - A widget that enables the modal system in its subtree
-  ///
-  /// Example:
-  /// ```dart
-  /// @override
-  /// Widget build(BuildContext context) {
-  ///   return Modal.activator(
-  ///     child: MaterialApp(
-  ///       home: MyHomePage(),
-  ///     ),
-  ///   );
-  /// }
-  /// ```
-  static Widget activator(
-          {required Widget child,
-          BorderRadius? borderRadius,
-          bool shouldBounceOnTap = true}) =>
-      _ActivatorWidget(
-        borderRadius: borderRadius ?? BorderRadius.zero,
-        shouldBounce: shouldBounceOnTap,
-        child: child,
-      );
-  //-------------------------------------------------//
-
-  /// Initializes the modal system
-  ///
-  /// Call this method during app startup to ensure the modal
-  /// system is properly initialized. Typically called in main()
-  /// or in a state management initialization routine.
-  static void initialiseActivator() {
-    // Initialize the controller states
-    _activeModalController.initializeState();
-    _dialogController.initializeState();
-    _sheetController.initializeState();
-    _snackbarController.initializeState();
   }
 
   /// Cleans up resources used by the modal system
@@ -3934,13 +4015,17 @@ class Modal {
   /// typically during app shutdown or when the containing
   /// widget is being disposed.
   static void disposeActivator() {
-    debugPrint("dispose Modal Activator"); // Debug logging
+    if (_showDebugPrints) {
+      debugPrint("dispose Modal Activator"); // Debug logging
+    }
 
     // Release resources
     _activeModalController.dispose();
     _dialogController.dispose();
     _sheetController.dispose();
     _snackbarController.dispose();
+
+    // No overlay bootstrapper is used in the supported installation strategy.
   }
 
   //-------------------------------------------------//
@@ -3951,12 +4036,14 @@ class _ActivatorWidget extends StatefulWidget {
   final Widget child;
   final BorderRadius borderRadius;
   final bool shouldBounce;
+  final Color backgroundColor;
 
   // Constructor for activator widget
   const _ActivatorWidget({
     required this.child,
     required this.borderRadius,
     this.shouldBounce = false,
+    this.backgroundColor = Colors.black,
   });
 
   @override
@@ -3989,67 +4076,43 @@ class _ActivatorWidgetState extends State<_ActivatorWidget> {
   @override
   void reassemble() {
     super.reassemble();
-    // Force rebuild on hot reload to reflect widget changes in the builder
-    if (Modal.isActive && mounted) {
-      // Increment the hot reload counter to force complete widget recreation
-      // This is necessary because the builder closure was compiled before hot reload
-      // and incrementing this counter forces widgets to rebuild fresh
-      _hotReloadCounter.state = _hotReloadCounter.state + 1;
-    }
+    // Older versions had editor-only hot reload helpers here.
+    // This package already supports hot reload via [_hotReloadCounter] and
+    // the reactive notifiers used throughout the activator.
+    return;
   }
 
   @override
   Widget build(BuildContext context) {
-    return OnBuilder(
+    return Material(
+      type: MaterialType.canvas,
+      color: widget.backgroundColor,
+      child: OnBuilder(
         listenToMany: [
           Modal.controller,
           Modal.dismissModalAnimationController,
-          // Modal._newModalNotifier
         ],
         sideEffects: SideEffects(
           initState: () {
-            // just in case the modal is active
-            //(very unlikely)
-            //just to ensure the controllers are reset
+            // Just in case a modal is active (very unlikely), ensure controllers are reset.
             Modal.dismissAll();
           },
           onSetState: (rebuilder) async {
             if (Modal.isActive && mounted) {
-              // If a new modal was shown, animate to 1 over time
-              // Guard: Don't animate in if we are currently dismissing a modal
-              // This prevents conflict between dismissal animation (going to 0)
-              // and activation animation (going to 1) when a snackbar is removed
-              // while a dialog/sheet is dismissing.
+              // Guard: Don't animate in if we are currently dismissing.
               if (Modal.isDismissing) return;
 
-              // Check if we should preserve existing background/blur effects
-              // IMPORTANT: When a modal is shown on top of another modal type,
-              // we should preserve the existing blur/background effects if they're already set up.
-              // This prevents visual glitches when:
-              // - A snackbar is shown on top of a dialog/bottom sheet
-              // - A dialog is shown on top of an existing bottom sheet
-              // - A bottom sheet is shown on top of an existing dialog
               final currentModalType = Modal.controller.state?.modalType;
               final bool shouldPreserveExistingBlur;
 
               if (currentModalType == ModalType.snackbar) {
-                // Snackbars never change background/blur - they're overlays
+                // Snackbars never change background/blur - they're overlays.
                 shouldPreserveExistingBlur =
                     Modal.isDialogActive || Modal.isSheetActive;
-              } else if (currentModalType == ModalType.dialog &&
-                  Modal.isSheetActive) {
-                // Dialog shown on top of bottom sheet - preserve bottom sheet's effects
-                // if background animation is already running (> 0)
-                shouldPreserveExistingBlur =
-                    _backgroundLayerAnimationNotifier.state > 0;
-              } else if (currentModalType == ModalType.sheet &&
-                  Modal.isDialogActive) {
-                // Sheet shown on top of dialog - preserve dialog's effects
-                // if background animation is already running (> 0)
-                shouldPreserveExistingBlur =
-                    _backgroundLayerAnimationNotifier.state > 0;
               } else {
-                shouldPreserveExistingBlur = false;
+                // For other modal types, preserve if background animation already running.
+                shouldPreserveExistingBlur =
+                    _backgroundLayerAnimationNotifier.state > 0;
               }
 
               if (!shouldPreserveExistingBlur) {
@@ -4057,15 +4120,15 @@ class _ActivatorWidgetState extends State<_ActivatorWidget> {
                     Modal.controller.state?.shouldBlurBackground ?? false;
                 final targetBlurState = shouldBlur ? 1.0 : 0.0;
                 if (targetBlurState != _blurAnimationStateNotifier.state) {
-                  // Animate blur state smoothly (0.0 to 1.0 or vice versa) using steps
                   _blurStateTimer?.cancel();
-                  const animSteps = 10;
-                  const totalDuration = 300; // milliseconds
+                  const int animSteps = 10;
+                  const int totalDurationMs = 300;
                   final stepDuration =
-                      Duration(milliseconds: totalDuration ~/ animSteps);
+                      Duration(milliseconds: totalDurationMs ~/ animSteps);
 
-                  double startValue = _blurAnimationStateNotifier.state;
-                  double step = (targetBlurState - startValue) / animSteps;
+                  final double startValue = _blurAnimationStateNotifier.state;
+                  final double step =
+                      (targetBlurState - startValue) / animSteps;
                   int currentStep = 0;
 
                   _blurStateTimer = Timer.periodic(stepDuration, (timer) {
@@ -4076,32 +4139,29 @@ class _ActivatorWidgetState extends State<_ActivatorWidget> {
                       if (mounted) {
                         _blurAnimationStateNotifier.state = targetBlurState;
                       }
+                      return;
+                    }
+                    if (mounted) {
+                      _blurAnimationStateNotifier.state =
+                          startValue + (step * currentStep);
                     } else {
-                      if (mounted) {
-                        _blurAnimationStateNotifier.state =
-                            startValue + (step * currentStep);
-                      } else {
-                        timer.cancel();
-                      }
+                      timer.cancel();
                     }
                   });
                 }
               }
 
-              // Check if the blur amount has changed (modal replacement with different blur intensity)
-              // Skip this animation if a snackbar is showing on top of a dialog/bottom sheet
               if (!shouldPreserveExistingBlur) {
                 final newBlurAmount = Modal.controller.state?.blurAmount ?? 3.0;
                 if (newBlurAmount != _blurAmountNotifier.state) {
-                  // Animate blur amount smoothly using steps
                   _blurAmountTimer?.cancel();
-                  const animSteps = 10;
-                  const totalDuration = 300; // milliseconds
+                  const int animSteps = 10;
+                  const int totalDurationMs = 300;
                   final stepDuration =
-                      Duration(milliseconds: totalDuration ~/ animSteps);
+                      Duration(milliseconds: totalDurationMs ~/ animSteps);
 
-                  double startValue = _blurAmountNotifier.state;
-                  double step = (newBlurAmount - startValue) / animSteps;
+                  final double startValue = _blurAmountNotifier.state;
+                  final double step = (newBlurAmount - startValue) / animSteps;
                   int currentStep = 0;
 
                   _blurAmountTimer = Timer.periodic(stepDuration, (timer) {
@@ -4112,21 +4172,18 @@ class _ActivatorWidgetState extends State<_ActivatorWidget> {
                       if (mounted) {
                         _blurAmountNotifier.state = newBlurAmount;
                       }
+                      return;
+                    }
+                    if (mounted) {
+                      _blurAmountNotifier.state =
+                          startValue + (step * currentStep);
                     } else {
-                      if (mounted) {
-                        _blurAmountNotifier.state =
-                            startValue + (step * currentStep);
-                      } else {
-                        timer.cancel();
-                      }
+                      timer.cancel();
                     }
                   });
                 }
               }
 
-              // Check if the height has changed (modal replacement or update)
-              // CRITICAL: Only update height for sheets, not for dialogs/snackbars
-              // Skip if we're preserving existing effects OR if the new modal is not a sheet
               if (!shouldPreserveExistingBlur &&
                   currentModalType == ModalType.sheet) {
                 final currentContent = Modal.controller.state;
@@ -4135,25 +4192,22 @@ class _ActivatorWidgetState extends State<_ActivatorWidget> {
                     : null;
                 if (newSize != null &&
                     _modalSheetHeightNotifier.state != newSize) {
-                  // Trigger height animation by incrementing the notifier
                   _heightAnimationTriggerNotifier.state++;
-                  // Reset the height notifier to start animation from current value
                   _modalSheetHeightNotifier.state = newSize;
                 }
               }
 
-              // Use a simple animation approach with Timer
-              // CRITICAL: Skip background animation if snackbar is showing on top - preserve existing effects
               if (!shouldPreserveExistingBlur) {
                 _backgroundTimer?.cancel();
-                const animSteps = 10;
-                const totalDuration = 300; // milliseconds
+                const int animSteps = 10;
+                const int totalDurationMs = 300;
                 final stepDuration =
-                    Duration(milliseconds: totalDuration ~/ animSteps);
+                    Duration(milliseconds: totalDurationMs ~/ animSteps);
 
-                double startValue = _backgroundLayerAnimationNotifier.state;
-                double endValue = 1.0;
-                double step = (endValue - startValue) / animSteps;
+                final double startValue =
+                    _backgroundLayerAnimationNotifier.state;
+                const double endValue = 1.0;
+                final double step = (endValue - startValue) / animSteps;
                 int currentStep = 0;
 
                 _backgroundTimer = Timer.periodic(stepDuration, (timer) {
@@ -4164,707 +4218,558 @@ class _ActivatorWidgetState extends State<_ActivatorWidget> {
                     if (mounted) {
                       _backgroundLayerAnimationNotifier.state = endValue;
                     }
+                    return;
+                  }
+                  if (mounted) {
+                    _backgroundLayerAnimationNotifier.state =
+                        startValue + (step * currentStep);
                   } else {
-                    if (mounted) {
-                      _backgroundLayerAnimationNotifier.state =
-                          startValue + (step * currentStep);
-                    } else {
-                      timer.cancel();
-                    }
+                    timer.cancel();
                   }
                 });
               }
             }
           },
-          onAfterBuild: () {},
         ),
         builder: () {
-          return Sizer(builder: (context, orientation, screenType) {
-            return MaterialApp(
-              color: Colors.transparent,
-              debugShowCheckedModeBanner: false,
+          final Widget backgroundLayer = OnBuilder(
+            listenToMany: [
+              _backgroundLayerAnimationNotifier,
+              _sheetController,
+            ],
+            builder: () {
+              final animValue = _backgroundLayerAnimationNotifier.state;
 
-              //https://stackoverflow.com/questions/69232764/flutter-web-cannot-scroll-with-mouse-down-drag-flutter-2-5
-              scrollBehavior: MaterialScrollBehavior().copyWith(
-                physics: BouncingScrollPhysics(),
-                scrollbars: true,
-                dragDevices: {
-                  PointerDeviceKind.mouse,
-                  PointerDeviceKind.touch,
-                  PointerDeviceKind.stylus,
-                  PointerDeviceKind.unknown,
-                  PointerDeviceKind.trackpad
-                },
-              ),
-              home: Material(
-                type: MaterialType.transparency,
-                child: Directionality(
-                  textDirection: TextDirection.ltr,
-                  child: Box(
-                    height: 100.h,
-                    width: 100.w,
-                    color: Colors.black,
-                    child: Stack(
-                      children: [
-                        //background overlay
-                        OnBuilder(
-                          listenToMany: [
-                            _backgroundLayerAnimationNotifier,
-                            _sheetController, // Listen to sheet controller for all sheet types (bottom, top, side)
-                          ],
-                          builder: () {
-                            final animValue =
-                                _backgroundLayerAnimationNotifier.state;
-                            // Calculate the animated values based on the animation value
-                            // CRITICAL: Use Modal.isBottomSheetActive/isSideSheetActive/isTopSheetActive instead of checking Modal.controller.state?.modalType
-                            // because when a snackbar shows on top of a sheet, Modal.controller.state
-                            // becomes the snackbar, but we still want the scale/position effects for the sheet.
+              final sheetPos = _sheetController.state?.sheetPosition;
 
-                            // Get the sheet position for determining animation direction
-                            final sheetPos =
-                                _sheetController.state?.sheetPosition;
+              final double verticalOffset;
+              if (Modal.isSheetActive) {
+                verticalOffset = animValue * -8.5;
+              } else if (Modal.isTopSheetActive) {
+                verticalOffset = animValue * 8.5;
+              } else {
+                verticalOffset = 0.0;
+              }
 
-                            // Bottom sheet: background moves UP
-                            // Top sheet: background moves DOWN (opposite direction)
-                            // Using translate offset for consistent behavior
-                            final double verticalOffset;
-                            if (Modal.isSheetActive) {
-                              // Bottom sheet: move UP (negative Y offset)
-                              verticalOffset = animValue * -8.5;
-                            } else if (Modal.isTopSheetActive) {
-                              // Top sheet: move DOWN (positive Y offset) - same magnitude, opposite direction
-                              verticalOffset = animValue * 8.5;
-                            } else {
-                              verticalOffset = 0.0;
-                            }
+              final double leftPosition;
+              final double rightPosition;
+              if (Modal.isSideSheetActive && sheetPos != null) {
+                if (sheetPos == SheetPosition.right) {
+                  leftPosition = 0.0;
+                  rightPosition = animValue * 8.5;
+                } else {
+                  leftPosition = animValue * 8.5;
+                  rightPosition = 0.0;
+                }
+              } else {
+                leftPosition = 0.0;
+                rightPosition = 0.0;
+              }
 
-                            // Side sheet: shifts horizontally from the side
-                            // If sheet is on the right, content shifts left (away from sheet)
-                            // If sheet is on the left, content shifts right (away from sheet)
-                            final double leftPosition;
-                            final double rightPosition;
-                            if (Modal.isSideSheetActive && sheetPos != null) {
-                              if (sheetPos == SheetPosition.right) {
-                                // Sheet on right: shift content left (negative offset - away from sheet)
-                                leftPosition = 0.0;
-                                rightPosition = animValue * 8.5;
-                              } else {
-                                // Sheet on left: shift content right (negative offset - away from sheet)
-                                leftPosition = animValue * 8.5;
-                                rightPosition = 0.0;
-                              }
-                            } else {
-                              leftPosition = 0.0;
-                              rightPosition = 0.0;
-                            }
+              final scaleValue = (Modal.isSheetActive ||
+                      Modal.isSideSheetActive ||
+                      Modal.isTopSheetActive)
+                  ? 1 - (animValue * 0.02)
+                  : 1.0;
 
-                            // Scale applies to all sheet types (bottom, top, side)
-                            final scaleValue = (Modal.isSheetActive ||
-                                    Modal.isSideSheetActive ||
-                                    Modal.isTopSheetActive)
-                                ? 1 -
-                                    (animValue * 0.02) // Animate from 1 to 0.98
-                                : 1.0;
+              return Positioned.fill(
+                child: Transform.translate(
+                  offset: Offset(
+                    Modal.isSideSheetActive
+                        ? (sheetPos == SheetPosition.right
+                            ? -leftPosition
+                            : rightPosition)
+                        : 0.0,
+                    verticalOffset,
+                  ),
+                  child: Transform.scale(
+                    scale: scaleValue,
+                    alignment: Modal.isSheetActive
+                        ? Alignment.bottomCenter
+                        : (Modal.isTopSheetActive
+                            ? Alignment.topCenter
+                            : (sheetPos == SheetPosition.right
+                                ? Alignment.centerRight
+                                : Alignment.centerLeft)),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      decoration: BoxDecoration(
+                        borderRadius: Modal.isSheetActive
+                            ? widget.borderRadius
+                            : BorderRadius.zero,
+                      ),
+                      child: OnBuilder(
+                        listenToMany: [
+                          _blurAnimationStateNotifier,
+                          _blurAmountNotifier,
+                          _activeModalController,
+                          _dialogController,
+                          _sheetController,
+                          _snackbarController,
+                        ],
+                        builder: () {
+                          // Calculate blur directly from notifiers
+                          final blurAmount = _blurAnimationStateNotifier.state *
+                              _backgroundLayerAnimationNotifier.state *
+                              _blurAmountNotifier.state;
 
-                            return Positioned.fill(
-                              child: Transform.translate(
-                                // Use translate for vertical/horizontal offset
-                                // This gives consistent behavior across all sheet types
-                                offset: Offset(
-                                  // Horizontal offset for side sheets
-                                  Modal.isSideSheetActive
-                                      ? (sheetPos == SheetPosition.right
-                                          ? -leftPosition
-                                          : rightPosition)
-                                      : 0.0,
-                                  // Vertical offset for bottom/top sheets
-                                  verticalOffset,
-                                ),
-                                child: Transform.scale(
-                                  scale: scaleValue,
-                                  // Background Layer Scale from the edge where the sheet appears:
-                                  // - Bottom sheet: scale from bottom (shrinks toward bottom, away from sheet)
-                                  // - Top sheet: scale from top (shrinks toward top, away from sheet)
-                                  // - Side sheet: scale from the respective side
-                                  alignment: Modal.isSheetActive
-                                      ? Alignment.bottomCenter
-                                      : (Modal.isTopSheetActive
-                                          ? Alignment.topCenter
-                                          : (sheetPos == SheetPosition.right
-                                              ? Alignment.centerRight
-                                              : Alignment.centerLeft)),
-                                  child: ClipRRect(
-                                    borderRadius: widget.borderRadius,
-                                    child: OnBuilder(
-                                      listenToMany: [
-                                        _blurAnimationStateNotifier,
-                                        _blurAmountNotifier,
-                                        // Listen to active modal controller for barrierColor changes
-                                        _activeModalController,
-                                        // Listen to modal controllers for blockBackgroundInteraction changes
-                                        _dialogController,
-                                        _sheetController,
-                                        _snackbarController,
-                                      ],
-                                      builder: () {
-                                        // Blur is animated smoothly when modal state changes (activation/deactivation)
-                                        // The blur value is scaled from both the blur state animation and background animation
-                                        final blurAmount =
-                                            _blurAnimationStateNotifier.state *
-                                                _backgroundLayerAnimationNotifier
-                                                    .state *
-                                                _blurAmountNotifier.state;
+                          // Animate borderRadius using the background animation value
+                          // When sheet is active: lerp from zero to target radius
+                          // When sheet is inactive: lerp from target radius to zero
+                          final animValue =
+                              _backgroundLayerAnimationNotifier.state;
+                          final borderRadius = Modal.isSheetActive
+                              ? BorderRadius.lerp(
+                                  BorderRadius.zero,
+                                  widget.borderRadius,
+                                  animValue,
+                                )!
+                              : BorderRadius.zero;
 
-                                        return STweenAnimationBuilder<double>(
-                                          tween: Tween<double>(
-                                            begin: blurAmount,
-                                            end: blurAmount,
+                          return ImageFiltered(
+                            imageFilter: ImageFilter.blur(
+                              sigmaX: blurAmount,
+                              sigmaY: blurAmount,
+                            ),
+                            child: ClipRRect(
+                              borderRadius: borderRadius,
+                              child: SBounceable(
+                                scaleFactor: 0.985,
+                                duration: 0.2.seconds,
+                                isBounceEnabled: (widget.shouldBounce &&
+                                    (Modal.isSheetActive ||
+                                        Modal.isDialogActive)),
+                                onTap: () {
+                                  if (Modal.isDismissing) {
+                                    if (_showDebugPrints) {
+                                      debugPrint(
+                                          'SBounceable.onTap ignored: Modal.isDismissing is true');
+                                    }
+                                    return;
+                                  }
+                                  if (Modal.isDialogActive &&
+                                      (_dialogController.state?.isDismissable ??
+                                          true)) {
+                                    Modal.dismissDialog();
+                                  } else if (Modal.isSheetActive &&
+                                      (_sheetController.state?.isDismissable ??
+                                          true)) {
+                                    Modal.dismissBottomSheet();
+                                  } else if (Modal.isSideSheetActive &&
+                                      (_sideSheetController
+                                              .state?.isDismissable ??
+                                          true)) {
+                                    Modal.dismissSideSheet();
+                                  }
+                                },
+                                child: SizedBox.expand(
+                                  child: Stack(
+                                    children: [
+                                      Positioned.fill(
+                                        child: RepaintBoundary(
+                                          child: AbsorbPointer(
+                                            absorbing:
+                                                _shouldBlockBackgroundInteraction(),
+                                            child: widget.child,
                                           ),
-                                          duration: 0.1.sec,
-                                          animationKey: _hotReloadCounter.state,
-                                          builder: (context, blurValue, child) {
-                                            return ImageFiltered(
-                                              imageFilter: ImageFilter.blur(
-                                                sigmaX: blurValue,
-                                                sigmaY: blurValue,
+                                        ),
+                                      ),
+                                      if (Modal.isActive)
+                                        Positioned.fill(
+                                          child: IgnorePointer(
+                                            child: AnimatedContainer(
+                                              duration: const Duration(
+                                                  milliseconds: 50),
+                                              curve: Curves.easeInOut,
+                                              decoration: BoxDecoration(
+                                                color: () {
+                                                  final Color
+                                                      effectiveBarrierColor;
+                                                  if (Modal.isSheetActive) {
+                                                    effectiveBarrierColor =
+                                                        _sheetController.state
+                                                                ?.barrierColor ??
+                                                            Colors.transparent;
+                                                  } else if (Modal
+                                                      .isSideSheetActive) {
+                                                    effectiveBarrierColor =
+                                                        _sideSheetController
+                                                                .state
+                                                                ?.barrierColor ??
+                                                            Colors.transparent;
+                                                  } else if (Modal
+                                                      .isDialogActive) {
+                                                    effectiveBarrierColor =
+                                                        _dialogController.state
+                                                                ?.barrierColor ??
+                                                            Colors.transparent;
+                                                  } else {
+                                                    effectiveBarrierColor = Modal
+                                                            .controller
+                                                            .state
+                                                            ?.barrierColor ??
+                                                        Colors.transparent;
+                                                  }
+                                                  return effectiveBarrierColor
+                                                      .withValues(
+                                                    alpha:
+                                                        _backgroundLayerAnimationNotifier
+                                                                .state *
+                                                            effectiveBarrierColor
+                                                                .a,
+                                                  );
+                                                }(),
+                                                // borderRadius:
+                                                //     widget.borderRadius,
                                               ),
-                                              child: SBounceable(
-                                                scaleFactor: 0.985,
-                                                duration: 0.2.seconds,
-                                                isBounceEnabled: (widget
-                                                        .shouldBounce &&
-                                                    (Modal.isSheetActive ||
-                                                        Modal.isDialogActive)),
-                                                // Only dismiss dialogs and bottom sheets on background tap.
-                                                // Snackbars should be dismissed via swipe or auto-dismiss, not tap-outside.
-                                                // Also respects the isDismissable property of the modal.
-                                                onTap: () {
-                                                  // Guard: Don't process taps while a dismissal is in progress
-                                                  // This prevents race conditions where a snackbar dismissal
-                                                  // triggers a rebuild that causes this handler to fire.
-                                                  if (Modal.isDismissing) {
-                                                    debugPrint(
-                                                        'SBounceable.onTap ignored: Modal.isDismissing is true');
-                                                    return;
-                                                  }
-                                                  // Check if dialog is active and dismissable
-                                                  if (Modal.isDialogActive &&
-                                                      (_dialogController.state
-                                                              ?.isDismissable ??
-                                                          true)) {
-                                                    Modal.dismissDialog();
-                                                  }
-                                                  // Check if bottom sheet is active and dismissable
-                                                  else if (Modal
-                                                          .isSheetActive &&
-                                                      (_sheetController.state
-                                                              ?.isDismissable ??
-                                                          true)) {
-                                                    Modal.dismissBottomSheet();
-                                                  }
-                                                  // Check if side sheet is active and dismissable
-                                                  else if (Modal
-                                                          .isSideSheetActive &&
-                                                      (_sideSheetController
-                                                              .state
-                                                              ?.isDismissable ??
-                                                          true)) {
-                                                    Modal.dismissSideSheet();
-                                                  }
-                                                  // If modal is not dismissable, do nothing
-                                                },
-
-                                                child: SizedBox(
-                                                  height: 100.h,
-                                                  width: 100.w,
-                                                  child: Stack(
-                                                    children: [
-                                                      // The app content (child) - the actual background layer
-                                                      Positioned.fill(
-                                                        child: ClipRRect(
-                                                          borderRadius: widget
-                                                              .borderRadius,
-                                                          child:
-                                                              RepaintBoundary(
-                                                            child:
-                                                                AbsorbPointer(
-                                                              absorbing:
-                                                                  _shouldBlockBackgroundInteraction(),
-                                                              child:
-                                                                  widget.child,
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ),
-
-                                                      // The barrier color overlay (on top of child)
-                                                      if (Modal.isActive)
-                                                        Positioned.fill(
-                                                          child: IgnorePointer(
-                                                            child:
-                                                                AnimatedContainer(
-                                                              duration:
-                                                                  const Duration(
-                                                                      milliseconds:
-                                                                          50),
-                                                              curve: Curves
-                                                                  .easeInOut,
-                                                              decoration:
-                                                                  BoxDecoration(
-                                                                // CRITICAL: Get barrier color from the underlying dialog/bottom sheet/side sheet when a snackbar
-                                                                // is showing on top, since snackbars typically have transparent barriers.
-                                                                // Priority: bottomSheet > sideSheet > dialog > snackbar (fallback to controller.state)
-                                                                color: () {
-                                                                  final Color
-                                                                      effectiveBarrierColor;
-                                                                  if (Modal
-                                                                      .isSheetActive) {
-                                                                    effectiveBarrierColor = _sheetController
-                                                                            .state
-                                                                            ?.barrierColor ??
-                                                                        Colors
-                                                                            .transparent;
-                                                                  } else if (Modal
-                                                                      .isSideSheetActive) {
-                                                                    effectiveBarrierColor = _sideSheetController
-                                                                            .state
-                                                                            ?.barrierColor ??
-                                                                        Colors
-                                                                            .transparent;
-                                                                  } else if (Modal
-                                                                      .isDialogActive) {
-                                                                    effectiveBarrierColor = _dialogController
-                                                                            .state
-                                                                            ?.barrierColor ??
-                                                                        Colors
-                                                                            .transparent;
-                                                                  } else {
-                                                                    effectiveBarrierColor = Modal
-                                                                            .controller
-                                                                            .state
-                                                                            ?.barrierColor ??
-                                                                        Colors
-                                                                            .transparent;
-                                                                  }
-                                                                  return effectiveBarrierColor
-                                                                      .withValues(
-                                                                    alpha: _backgroundLayerAnimationNotifier
-                                                                            .state *
-                                                                        effectiveBarrierColor
-                                                                            .a,
-                                                                  );
-                                                                }(),
-                                                                borderRadius:
-                                                                    BorderRadius
-                                                                        .circular(
-                                                                            30),
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ),
-                                            );
-                                          },
-                                        );
-                                      },
-                                    ),
+                                            ),
+                                          ),
+                                        ),
+                                    ],
                                   ),
                                 ),
                               ),
-                            );
-                          },
-                        ),
-
-                        //--------------------------------------------------//
-                        // LAYER 1: Dialog/BottomSheet Layer
-                        // This layer renders dialogs and bottom sheets using their type-specific controllers.
-                        // Positioned BELOW snackbars in the z-order so snackbars always appear on top.
-                        //--------------------------------------------------//
-                        OnBuilder(
-                          listenToMany: [
-                            _modalDragOffsetNotifier,
-                            _dialogController,
-                            _sheetController,
-                            _dialogDismissingNotifier,
-                            _sheetDismissingNotifier,
-                            _hotReloadCounter,
-                          ],
-                          builder: () {
-                            // Access hot reload counter to ensure this builder depends on it
-                            // ignore: unused_local_variable
-                            final hotReloadValue = _hotReloadCounter.state;
-
-                            // Build a list of widgets to render - dialogs and bottom/side sheets can coexist
-                            final modals = <Widget>[];
-
-                            // Add bottom sheet, top sheet, or side sheet if active (renders below dialogs in stack)
-                            // All sheet types use the sheet controller with different sheetPosition values
-                            if (Modal.isSheetActive) {
-                              final content = _sheetController.state!;
-                              final position =
-                                  content.sheetPosition ?? SheetPosition.bottom;
-
-                              // Compute height/width based on sheet position
-                              final isVertical =
-                                  position == SheetPosition.bottom ||
-                                      position == SheetPosition.top;
-                              final isHorizontal =
-                                  position == SheetPosition.left ||
-                                      position == SheetPosition.right;
-
-                              modals.add(
-                                _Sheet(
-                                  // Use uniqueId for proper widget identity tracking
-                                  key: ValueKey('sheet_${content.uniqueId}'),
-                                  // Pass the unique ID for animation key generation
-                                  sheetId: content.uniqueId,
-                                  height: isVertical ? content.size : null,
-                                  expandedHeight:
-                                      (content.isExpandable && isVertical)
-                                          ? content.expandedPercentageSize
-                                          : null,
-                                  width: isHorizontal ? content.size : null,
-                                  expandedWidth:
-                                      (content.isExpandable && isHorizontal)
-                                          ? content.expandedPercentageSize
-                                          : null,
-                                  // CRITICAL: Only use bottom sheet specific dismissing flag
-                                  // Do NOT use global dismissModalAnimationController which affects all modal types
-                                  isDismissing: Modal.isSheetDismissing,
-                                  isExpandable: content.isExpandable,
-                                  contentPaddingByDragHandle:
-                                      content.contentPaddingByDragHandle,
-                                  backgroundColor: content.backgroundColor,
-                                  position: position,
-                                  child: content.buildContent(),
-                                ),
-                              );
-                            }
-
-                            // Add dialog if active (renders above bottom sheets in stack)
-                            if (Modal.isDialogActive) {
-                              final content = _dialogController.state!;
-                              modals.add(
-                                DialogModal(
-                                  // Use uniqueId for proper widget identity tracking
-                                  key: ValueKey('dialog_${content.uniqueId}'),
-                                  // Pass the unique ID for animation key generation
-                                  dialogId: content.uniqueId,
-                                  position: content.modalPosition,
-                                  // CRITICAL: Only use dialog specific dismissing flag
-                                  // Do NOT use global dismissModalAnimationController which affects all modal types
-                                  isDismissing: Modal.isDialogDismissing,
-                                  isDraggable: content.isDraggable,
-                                  offset: content.offset,
-                                  child: content.buildContent(),
-                                ),
-                              );
-                            } // No dialog or bottom sheet active
-                            if (modals.isEmpty) {
-                              return const SizedBox.shrink();
-                            }
-
-                            // CRITICAL FIX: Always use Stack to maintain consistent widget tree structure
-                            // Previously, we returned `modals.first` for single modals and `Stack(children: modals)`
-                            // for multiple modals. This caused the widget tree structure to change when a second
-                            // modal type was shown, causing Flutter to unmount and remount the first modal
-                            // (resulting in visible "flicker" as animations restart).
-                            // By always using Stack, the bottomsheet/dialog widgets maintain their position
-                            // in the tree regardless of whether other modal types are active.
-                            return Stack(children: modals);
-                          },
-                        ),
-
-                        //--------------------------------------------------//
-                        // LAYER 2: Snackbar Layer (ALWAYS ON TOP)
-                        // This layer renders snackbars using their type-specific controller.
-                        // Positioned ABOVE dialogs/bottom sheets so snackbars are always visible.
-                        // This is the key architectural improvement - snackbars can show/dismiss
-                        // completely independently of dialogs and bottom sheets.
-                        //--------------------------------------------------//
-                        OnBuilder(
-                          listenToMany: [
-                            _snackbarController,
-                            _snackbarQueueNotifier,
-                            _snackbarDismissingNotifier,
-                            _snackbarDismissingIdsNotifier, // Per-snackbar dismissing state
-                            _staggeredExpandedNotifier,
-                            _hotReloadCounter,
-                          ],
-                          builder: () {
-                            // Access hot reload counter for hot reload support
-                            // ignore: unused_local_variable
-                            final hotReloadValue = _hotReloadCounter.state;
-
-                            // Check if snackbars are active (type-specific)
-                            if (!Modal.isSnackbarActive) {
-                              return const SizedBox.shrink();
-                            }
-
-                            // Render snackbars from all positions in the queue map
-                            final queueMap = Modal.snackbarQueue.state;
-                            final snackbars = <Widget>[];
-                            final expandedSnackbars =
-                                <Widget>[]; // Separated list for expanded views
-
-                            // Iterate through each position's queue
-                            for (final entry in queueMap.entries) {
-                              final position = entry.key;
-                              final queue = entry.value;
-
-                              if (queue.isEmpty) continue;
-
-                              // Get the display mode from the first snackbar in queue
-                              // (all snackbars in a position should use the same mode)
-                              final displayMode =
-                                  queue.first.snackbarDisplayMode;
-
-                              switch (displayMode) {
-                                case SnackbarDisplayMode.queued:
-                                  // QUEUED: Only show the first snackbar, others wait in queue
-                                  final snackbarContent = queue.first;
-                                  final snackbarKey =
-                                      "snackbar_${position.x}_${position.y}_${snackbarContent.uniqueId}";
-
-                                  snackbars.add(
-                                    SnackbarModal(
-                                      key: ValueKey(snackbarKey),
-                                      snackbarId: snackbarContent.uniqueId,
-                                      position: snackbarContent.modalPosition,
-                                      // Use per-snackbar dismissing state instead of global flag
-                                      isDismissing: _isSnackbarDismissing(
-                                          snackbarContent.uniqueId),
-                                      isSwipeable: snackbarContent.isSwipeable,
-                                      autoDismissDuration:
-                                          snackbarContent.autoDismissDuration,
-                                      offset: snackbarContent.offset,
-                                      barrierColor:
-                                          snackbarContent.barrierColor,
-                                      onSwipeDismiss: (direction) {
-                                        final isImmediate =
-                                            direction == 'dismiss_immediate';
-                                        Modal._removeSnackbarFromQueue(
-                                            position, isImmediate);
-                                      },
-                                      stackIndex: 0,
-                                      maxStacked: 1,
-                                      width: snackbarContent.snackbarWidth !=
-                                              null
-                                          ? (snackbarContent.snackbarWidth! >
-                                                  1.0
-                                              ? snackbarContent.snackbarWidth!
-                                              : MediaQuery.of(context)
-                                                      .size
-                                                      .width *
-                                                  snackbarContent
-                                                      .snackbarWidth!)
-                                          : null,
-                                      child: snackbarContent.buildContent(),
-                                    ),
-                                  );
-                                  break;
-
-                                case SnackbarDisplayMode.notificationBubble:
-                                  // NOTIFICATION BUBBLE: Show first snackbar with a count badge
-                                  // Can expand to show all snackbars like staggered mode
-                                  final isExpanded =
-                                      _staggeredExpandedNotifier.state ==
-                                          position;
-                                  final isFromTop =
-                                      position == Alignment.topCenter ||
-                                          position == Alignment.topLeft ||
-                                          position == Alignment.topRight;
-
-                                  // Use AnimatedSwitcher for smooth transitions (same as staggered)
-                                  final expandedView = Positioned.fill(
-                                    child: AnimatedSwitcher(
-                                      duration:
-                                          const Duration(milliseconds: 300),
-                                      switchInCurve: Curves.easeOutCubic,
-                                      switchOutCurve: Curves.easeInCubic,
-                                      transitionBuilder: (child, animation) {
-                                        return FadeTransition(
-                                          opacity: animation,
-                                          child: SlideTransition(
-                                            position: Tween<Offset>(
-                                              begin: Offset(
-                                                  0, isFromTop ? -0.1 : 0.1),
-                                              end: Offset.zero,
-                                            ).animate(CurvedAnimation(
-                                              parent: animation,
-                                              curve: Curves.easeOutCubic,
-                                            )),
-                                            child: child,
-                                          ),
-                                        );
-                                      },
-                                      child: isExpanded
-                                          ? _buildExpandedStaggeredView(
-                                              key: const ValueKey('expanded'),
-                                              context: context,
-                                              queue: queue,
-                                              position: position,
-                                              isFromTop: isFromTop,
-                                            )
-                                          : _buildCollapsedNotificationBubbleView(
-                                              // Use unique key per snackbar for AnimatedSwitcher to animate transitions
-                                              key: ValueKey(
-                                                  'notification_bubble_${queue.last.uniqueId}'),
-                                              context: context,
-                                              queue: queue,
-                                              position: position,
-                                            ),
-                                    ),
-                                  );
-
-                                  // CRITICAL: When expanded, add to expandedSnackbars (will be rendered first/bottom)
-                                  // When collapsed, add to normal snackbars list
-                                  if (isExpanded) {
-                                    expandedSnackbars.add(expandedView);
-                                  } else {
-                                    snackbars.add(expandedView);
-                                  }
-                                  break;
-
-                                case SnackbarDisplayMode.staggered:
-                                  // STAGGERED: Display snackbars stacked or expanded based on state
-                                  final isExpanded =
-                                      _staggeredExpandedNotifier.state ==
-                                          position;
-                                  final maxStacked =
-                                      queue.first.maxStackedSnackbars;
-                                  final isFromTop =
-                                      position == Alignment.topCenter ||
-                                          position == Alignment.topLeft ||
-                                          position == Alignment.topRight;
-
-                                  // Use AnimatedSwitcher for smooth transitions
-                                  // Wrap in Positioned.fill to get bounded constraints from parent Stack
-                                  // (AnimatedSwitcher's transitions wrap children)
-                                  final staggeredView = Positioned.fill(
-                                    child: AnimatedSwitcher(
-                                      duration:
-                                          const Duration(milliseconds: 300),
-                                      switchInCurve: Curves.easeOutCubic,
-                                      switchOutCurve: Curves.easeInCubic,
-                                      transitionBuilder: (child, animation) {
-                                        return FadeTransition(
-                                          opacity: animation,
-                                          child: SlideTransition(
-                                            position: Tween<Offset>(
-                                              begin: Offset(
-                                                  0, isFromTop ? -0.1 : 0.1),
-                                              end: Offset.zero,
-                                            ).animate(CurvedAnimation(
-                                              parent: animation,
-                                              curve: Curves.easeOutCubic,
-                                            )),
-                                            child: child,
-                                          ),
-                                        );
-                                      },
-                                      child: isExpanded
-                                          ? _buildExpandedStaggeredView(
-                                              key: const ValueKey('expanded'),
-                                              context: context,
-                                              queue: queue,
-                                              position: position,
-                                              isFromTop: isFromTop,
-                                            )
-                                          : _buildCollapsedStaggeredView(
-                                              key: const ValueKey('collapsed'),
-                                              context: context,
-                                              queue: queue,
-                                              position: position,
-                                              isFromTop: isFromTop,
-                                              maxStacked: maxStacked,
-                                            ),
-                                    ),
-                                  );
-
-                                  // CRITICAL: When expanded, add to expandedSnackbars (will be rendered first/bottom)
-                                  // When collapsed, add to normal snackbars list
-                                  if (isExpanded) {
-                                    expandedSnackbars.add(staggeredView);
-                                  } else {
-                                    snackbars.add(staggeredView);
-                                  }
-                                  break;
-
-                                case SnackbarDisplayMode.replace:
-                                  // REPLACE: Show only the single snackbar (queue should have 1 item)
-                                  if (queue.isNotEmpty) {
-                                    final snackbarContent = queue.last;
-                                    final snackbarKey =
-                                        "snackbar_${position.x}_${position.y}_${snackbarContent.uniqueId}";
-
-                                    snackbars.add(
-                                      SnackbarModal(
-                                        key: ValueKey(snackbarKey),
-                                        snackbarId: snackbarContent.uniqueId,
-                                        position: snackbarContent.modalPosition,
-                                        isDismissing:
-                                            Modal.isSnackbarDismissing,
-                                        isSwipeable:
-                                            snackbarContent.isSwipeable,
-                                        autoDismissDuration:
-                                            snackbarContent.autoDismissDuration,
-                                        offset: snackbarContent.offset,
-                                        barrierColor:
-                                            snackbarContent.barrierColor,
-                                        onSwipeDismiss: (direction) {
-                                          final isImmediate =
-                                              direction == 'dismiss_immediate';
-                                          Modal._removeSnackbarFromQueue(
-                                              position, isImmediate);
-                                        },
-                                        stackIndex: 0,
-                                        maxStacked: 1,
-                                        width: snackbarContent.snackbarWidth !=
-                                                null
-                                            ? (snackbarContent.snackbarWidth! >
-                                                    1.0
-                                                ? snackbarContent.snackbarWidth!
-                                                : MediaQuery.of(context)
-                                                        .size
-                                                        .width *
-                                                    snackbarContent
-                                                        .snackbarWidth!)
-                                            : null,
-                                        child: snackbarContent.buildContent(),
-                                      ),
-                                    );
-                                  }
-                                  break;
-                              }
-                            }
-
-                            // If no snackbars in queue, return empty
-                            if (snackbars.isEmpty &&
-                                expandedSnackbars.isEmpty) {
-                              return const SizedBox.shrink();
-                            }
-
-                            // CRITICAL: Render collapsed snackbars FIRST (bottom layer), then expanded ones (top layer)
-                            // In Flutter Stack, later children render on top. So we put collapsed first, expanded last.
-                            // This ensures _buildExpandedStaggeredView always appears ABOVE other snackbars as the top layer.
-                            // When a group is collapsed, it returns to its natural position in the snackbars list.
-                            return Stack(
-                              children: [...snackbars, ...expandedSnackbars],
-                            );
-                          },
-                        ),
-                      ],
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   ),
                 ),
-              ),
-            );
-          });
-        });
+              );
+            },
+          );
+
+          final Widget modalLayer = OnBuilder(
+            listenToMany: [
+              _modalDragOffsetNotifier,
+              _dialogController,
+              _sheetController,
+              _dialogDismissingNotifier,
+              _sheetDismissingNotifier,
+              _hotReloadCounter,
+            ],
+            builder: () {
+              // ignore: unused_local_variable
+              final hotReloadValue = _hotReloadCounter.state;
+
+              final modals = <Widget>[];
+
+              if (Modal.isSheetActive) {
+                final content = _sheetController.state!;
+                final position = content.sheetPosition ?? SheetPosition.bottom;
+                final isVertical = position == SheetPosition.bottom ||
+                    position == SheetPosition.top;
+                final isHorizontal = position == SheetPosition.left ||
+                    position == SheetPosition.right;
+
+                modals.add(
+                  _Sheet(
+                    key: ValueKey('sheet_${content.uniqueId}'),
+                    sheetId: content.uniqueId,
+                    height: isVertical ? content.size : null,
+                    expandedHeight: (content.isExpandable && isVertical)
+                        ? content.expandedPercentageSize
+                        : null,
+                    width: isHorizontal ? content.size : null,
+                    expandedWidth: (content.isExpandable && isHorizontal)
+                        ? content.expandedPercentageSize
+                        : null,
+                    isDismissing: Modal.isSheetDismissing,
+                    isExpandable: content.isExpandable,
+                    contentPaddingByDragHandle:
+                        content.contentPaddingByDragHandle,
+                    backgroundColor: content.backgroundColor,
+                    position: position,
+                    child: content.buildContent(),
+                  ),
+                );
+              }
+
+              if (Modal.isDialogActive) {
+                final content = _dialogController.state!;
+                modals.add(
+                  DialogModal(
+                    key: ValueKey('dialog_${content.uniqueId}'),
+                    dialogId: content.uniqueId,
+                    position: content.modalPosition,
+                    isDismissing: Modal.isDialogDismissing,
+                    isDraggable: content.isDraggable,
+                    offset: content.offset,
+                    child: content.buildContent(),
+                  ),
+                );
+              }
+
+              if (modals.isEmpty) {
+                return const SizedBox.shrink();
+              }
+
+              return Stack(children: modals);
+            },
+          );
+
+          final Widget snackbarLayer = OnBuilder(
+            listenToMany: [
+              _snackbarController,
+              _snackbarQueueNotifier,
+              _snackbarDismissingNotifier,
+              _snackbarDismissingIdsNotifier,
+              _staggeredExpandedNotifier,
+              _hotReloadCounter,
+            ],
+            builder: () {
+              // ignore: unused_local_variable
+              final hotReloadValue = _hotReloadCounter.state;
+
+              if (!Modal.isSnackbarActive) {
+                return const SizedBox.shrink();
+              }
+              // Render snackbars from all positions in the queue map
+              final queueMap = Modal.snackbarQueue.state;
+              final snackbars = <Widget>[];
+              final expandedSnackbars = <Widget>[];
+
+              // Iterate through each position's queue
+              for (final entry in queueMap.entries) {
+                final position = entry.key;
+                final queue = entry.value;
+
+                if (queue.isEmpty) continue;
+
+                // Get the display mode from the first snackbar in queue
+                // (all snackbars in a position should use the same mode)
+                final displayMode = queue.first.snackbarDisplayMode;
+
+                switch (displayMode) {
+                  case SnackbarDisplayMode.queued:
+                    // QUEUED: Only show the first snackbar, others wait in queue
+                    final snackbarContent = queue.first;
+                    final snackbarKey =
+                        "snackbar_${position.x}_${position.y}_${snackbarContent.uniqueId}";
+
+                    snackbars.add(
+                      SnackbarModal(
+                        key: ValueKey(snackbarKey),
+                        snackbarId: snackbarContent.uniqueId,
+                        position: snackbarContent.modalPosition,
+                        // Use per-snackbar dismissing state instead of global flag
+                        isDismissing:
+                            _isSnackbarDismissing(snackbarContent.uniqueId),
+                        isSwipeable: snackbarContent.isSwipeable,
+                        autoDismissDuration:
+                            snackbarContent.autoDismissDuration,
+                        offset: snackbarContent.offset,
+                        barrierColor: snackbarContent.barrierColor,
+                        onSwipeDismiss: (direction) {
+                          final isImmediate = direction == 'dismiss_immediate';
+                          Modal._removeSnackbarFromQueue(position, isImmediate);
+                        },
+                        stackIndex: 0,
+                        maxStacked: 1,
+                        width: snackbarContent.snackbarWidth != null
+                            ? (snackbarContent.snackbarWidth! > 1.0
+                                ? snackbarContent.snackbarWidth!
+                                : MediaQuery.of(context).size.width *
+                                    snackbarContent.snackbarWidth!)
+                            : null,
+                        child: snackbarContent.buildContent(),
+                      ),
+                    );
+                    break;
+
+                  case SnackbarDisplayMode.notificationBubble:
+                    // NOTIFICATION BUBBLE: Show first snackbar with a count badge
+                    // Can expand to show all snackbars like staggered mode
+                    final isExpanded =
+                        _staggeredExpandedNotifier.state == position;
+                    final isFromTop = position == Alignment.topCenter ||
+                        position == Alignment.topLeft ||
+                        position == Alignment.topRight;
+
+                    // Use AnimatedSwitcher for smooth transitions (same as staggered)
+                    final expandedView = Positioned.fill(
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 300),
+                        switchInCurve: Curves.easeOutCubic,
+                        switchOutCurve: Curves.easeInCubic,
+                        transitionBuilder: (child, animation) {
+                          return FadeTransition(
+                            opacity: animation,
+                            child: SlideTransition(
+                              position: Tween<Offset>(
+                                begin: Offset(0, isFromTop ? -0.1 : 0.1),
+                                end: Offset.zero,
+                              ).animate(CurvedAnimation(
+                                parent: animation,
+                                curve: Curves.easeOutCubic,
+                              )),
+                              child: child,
+                            ),
+                          );
+                        },
+                        child: isExpanded
+                            ? _buildExpandedStaggeredView(
+                                key: const ValueKey('expanded'),
+                                context: context,
+                                queue: queue,
+                                position: position,
+                                isFromTop: isFromTop,
+                              )
+                            : _buildCollapsedNotificationBubbleView(
+                                // Use unique key per snackbar for AnimatedSwitcher to animate transitions
+                                key: ValueKey(
+                                    'notification_bubble_${queue.last.uniqueId}'),
+                                context: context,
+                                queue: queue,
+                                position: position,
+                              ),
+                      ),
+                    );
+
+                    // CRITICAL: When expanded, add to expandedSnackbars (will be rendered first/bottom)
+                    // When collapsed, add to normal snackbars list
+                    if (isExpanded) {
+                      expandedSnackbars.add(expandedView);
+                    } else {
+                      snackbars.add(expandedView);
+                    }
+                    break;
+
+                  case SnackbarDisplayMode.staggered:
+                    // STAGGERED: Display snackbars stacked or expanded based on state
+                    final isExpanded =
+                        _staggeredExpandedNotifier.state == position;
+                    final maxStacked = queue.first.maxStackedSnackbars;
+                    final isFromTop = position == Alignment.topCenter ||
+                        position == Alignment.topLeft ||
+                        position == Alignment.topRight;
+
+                    // Use AnimatedSwitcher for smooth transitions
+                    // Wrap in Positioned.fill to get bounded constraints from parent Stack
+                    // (AnimatedSwitcher's transitions wrap children)
+                    final staggeredView = Positioned.fill(
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 300),
+                        switchInCurve: Curves.easeOutCubic,
+                        switchOutCurve: Curves.easeInCubic,
+                        transitionBuilder: (child, animation) {
+                          return FadeTransition(
+                            opacity: animation,
+                            child: SlideTransition(
+                              position: Tween<Offset>(
+                                begin: Offset(0, isFromTop ? -0.1 : 0.1),
+                                end: Offset.zero,
+                              ).animate(CurvedAnimation(
+                                parent: animation,
+                                curve: Curves.easeOutCubic,
+                              )),
+                              child: child,
+                            ),
+                          );
+                        },
+                        child: isExpanded
+                            ? _buildExpandedStaggeredView(
+                                key: const ValueKey('expanded'),
+                                context: context,
+                                queue: queue,
+                                position: position,
+                                isFromTop: isFromTop,
+                              )
+                            : _buildCollapsedStaggeredView(
+                                key: const ValueKey('collapsed'),
+                                context: context,
+                                queue: queue,
+                                position: position,
+                                isFromTop: isFromTop,
+                                maxStacked: maxStacked,
+                              ),
+                      ),
+                    );
+
+                    // CRITICAL: When expanded, add to expandedSnackbars (will be rendered first/bottom)
+                    // When collapsed, add to normal snackbars list
+                    if (isExpanded) {
+                      expandedSnackbars.add(staggeredView);
+                    } else {
+                      snackbars.add(staggeredView);
+                    }
+                    break;
+
+                  case SnackbarDisplayMode.replace:
+                    // REPLACE: Show only the single snackbar (queue should have 1 item)
+                    if (queue.isNotEmpty) {
+                      final snackbarContent = queue.last;
+                      final snackbarKey =
+                          "snackbar_${position.x}_${position.y}_${snackbarContent.uniqueId}";
+
+                      snackbars.add(
+                        SnackbarModal(
+                          key: ValueKey(snackbarKey),
+                          snackbarId: snackbarContent.uniqueId,
+                          position: snackbarContent.modalPosition,
+                          isDismissing: Modal.isSnackbarDismissing,
+                          isSwipeable: snackbarContent.isSwipeable,
+                          autoDismissDuration:
+                              snackbarContent.autoDismissDuration,
+                          offset: snackbarContent.offset,
+                          barrierColor: snackbarContent.barrierColor,
+                          onSwipeDismiss: (direction) {
+                            final isImmediate =
+                                direction == 'dismiss_immediate';
+                            Modal._removeSnackbarFromQueue(
+                                position, isImmediate);
+                          },
+                          stackIndex: 0,
+                          maxStacked: 1,
+                          width: snackbarContent.snackbarWidth != null
+                              ? (snackbarContent.snackbarWidth! > 1.0
+                                  ? snackbarContent.snackbarWidth!
+                                  : MediaQuery.of(context).size.width *
+                                      snackbarContent.snackbarWidth!)
+                              : null,
+                          child: snackbarContent.buildContent(),
+                        ),
+                      );
+                    }
+                    break;
+                }
+              }
+
+              // If no snackbars in queue, return empty
+              if (snackbars.isEmpty && expandedSnackbars.isEmpty) {
+                return const SizedBox.shrink();
+              }
+
+              // CRITICAL: Render collapsed snackbars FIRST (bottom layer), then expanded ones (top layer)
+              // In Flutter Stack, later children render on top. So we put collapsed first, expanded last.
+              // This ensures _buildExpandedStaggeredView always appears ABOVE other snackbars as the top layer.
+              // When a group is collapsed, it returns to its natural position in the snackbars list.
+              return Stack(
+                children: [...snackbars, ...expandedSnackbars],
+              );
+            },
+          );
+
+          final mediaQuerySize = MediaQuery.maybeOf(context)?.size;
+          final viewportHeight = mediaQuerySize?.height ?? 0.0;
+          final viewportWidth = mediaQuerySize?.width ?? 0.0;
+
+          return SizedBox(
+            height: viewportHeight > 0 ? viewportHeight : null,
+            width: viewportWidth > 0 ? viewportWidth : null,
+            child: Stack(
+              children: [
+                backgroundLayer,
+                modalLayer,
+                snackbarLayer,
+              ],
+            ),
+          );
+        },
+      ),
+    );
   }
 }
 

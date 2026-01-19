@@ -40,8 +40,10 @@ void createSmoothAnimation({
   final startTime = DateTime.now();
   final totalChange = endValue - startValue;
 
-  // debugPrint(
-  //     '[🎬 ANIM START] start=$startValue | end=$endValue | duration=${duration.inMilliseconds}ms | curve=$curve');
+  if (_showDebugPrints) {
+    debugPrint(
+        '[🎬 ANIM START] start=$startValue | end=$endValue | duration=${duration.inMilliseconds}ms | curve=$curve');
+  }
 
   // Target ~60fps with 16ms intervals for smooth animation
   const frameInterval = Duration(milliseconds: 16);
@@ -61,11 +63,11 @@ void createSmoothAnimation({
     final currentValue = startValue + (totalChange * easedProgress);
 
     // Log every 5th frame to avoid spam
-    if (elapsedMilliseconds % 80 < 20) {
-      // debugPrint(
-      //     '[🎬 ANIM] progress=${(normalizedProgress * 100).toStringAsFixed(0)}% | '
-      //     'value=${currentValue.toStringAsFixed(1)} | '
-      //     'elapsed=${elapsedMilliseconds}ms');
+    if (elapsedMilliseconds % 80 < 20 && _showDebugPrints) {
+      debugPrint(
+          '[🎬 ANIM] progress=${(normalizedProgress * 100).toStringAsFixed(0)}% | '
+          'value=${currentValue.toStringAsFixed(1)} | '
+          'elapsed=${elapsedMilliseconds}ms');
     }
 
     // Call the update function with current value
@@ -74,7 +76,9 @@ void createSmoothAnimation({
     // Stop timer when animation completes
     if (normalizedProgress >= 1.0) {
       timer.cancel();
-      // debugPrint('[🎬 ANIM COMPLETE] final value=$currentValue');
+      if (_showDebugPrints) {
+        debugPrint('[🎬 ANIM COMPLETE] final value=$currentValue');
+      }
       onComplete?.call();
     }
   });

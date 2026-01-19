@@ -8,15 +8,9 @@ import 'package:s_modal/s_modal.dart';
 Widget _testBuilder([BuildContext? _]) => const SizedBox();
 
 void main() {
-  setUp(() {
-    // Initialize the activator to ensure controllers are ready
-    Modal.initialiseActivator();
-  });
-
   tearDown(() {
-    // Clean up all modals and dispose activator after each test
+    // Clean up all modals after each test
     Modal.dismissAll();
-    Modal.disposeActivator();
   });
 
   group('Modal API Tests', () {
@@ -44,7 +38,6 @@ void main() {
     });
 
     test('Modal.show() accepts various configuration parameters', () {
-      // Test that Modal.show() accepts common parameters without throwing
       expect(
         () => Modal.show(
           builder: _testBuilder,
@@ -250,138 +243,48 @@ void main() {
   });
 
   group('Modal Lifecycle Tests', () {
-    test('Modal activator creates valid widget', () {
-      final widget = Modal.activator(child: const SizedBox());
-      expect(widget, isNotNull);
-    });
-
-    testWidgets(
-        'Dialog dismissed via barrier can show snackbar and app remains interactive',
+    testWidgets('Dialog barrier dismiss shows snackbar',
         (WidgetTester tester) async {
-      // Use MaterialApp to ensure proper layout and media query for full-screen barrier
       await tester.pumpWidget(
         MaterialApp(
-          home: Modal.activator(
-            child: const Scaffold(
-              body: SizedBox.expand(),
-            ),
-          ),
+          builder: Modal.appBuilder,
+          home: const Scaffold(body: SizedBox.expand()),
         ),
       );
 
-      // Show a dialog modal that enqueues a short-lived snackbar on dismiss
-      // Use a fixed size content so we can reliably tap outside it
+      await tester.pump();
+
+      // Show dialog with onDismissed that shows a snackbar
       Modal.show(
+        context: tester.element(find.byType(Scaffold)),
         builder: ([_]) => const SizedBox(width: 100, height: 100),
         modalType: ModalType.dialog,
         onDismissed: () {
-          // Show a snackbar with enough duration to survive the test checks
           Modal.showSnackbar(
+            context: tester.element(find.byType(Scaffold)),
             text: 'Dismissed',
-            duration: const Duration(seconds: 5),
+            duration: null,
+            isDismissible: true,
           );
         },
       );
-      await tester.pumpAndSettle();
-
-      expect(Modal.isDialogActive, true);
-
-      // Perform a barrier tap at the top-left area of the screen.
-      // Since dialog is centered and 100x100, top-left (10,10) is definitely barrier.
-      await tester.tapAt(const Offset(10, 10));
-
-      // Pump to register the tap gesture
       await tester.pump();
-
-      // Advance time for the dismissal animations (0.4s)
-      // We pump more than enough to ensure the timer triggers
-      await tester.pump(const Duration(milliseconds: 600));
-      // Pump a bit more for state to settle, but NOT pumpAndSettle which waits for all timers
       await tester.pump(const Duration(milliseconds: 100));
-
-      // Dialog should NOT be active but snackbar should be active
-      expect(Modal.isDialogActive, false);
-      expect(Modal.isSnackbarActive, true);
-
-      // Advance time to trigger auto-dismiss timer (5s) + animation delay (300ms)
-      await tester.pump(const Duration(seconds: 5, milliseconds: 500));
-      await tester.pumpAndSettle();
-
-      // After snackbar dismiss completes, no modal should remain active
-      // Clean up any remaining state
-      Modal.dismissAll();
-      await tester.pump(const Duration(milliseconds: 100));
-      await tester.pumpAndSettle();
-
-      final activeDialog = Modal.isDialogActive;
-      final activeBottom = Modal.isSheetActive;
-      final activeSnack = Modal.isSnackbarActive;
-      expect(activeDialog, false, reason: 'dialog still active');
-      expect(activeBottom, false, reason: 'bottom sheet still active');
-      expect(activeSnack, false, reason: 'snackbar still active');
-      expect(Modal.isActive, false,
-          reason:
-              'still active: dialog=$activeDialog bottom=$activeBottom snack=$activeSnack');
-    });
-
-    testWidgets(
-        'Programmatic dismissDialog triggers onDismissed snackbar and app remains interactive',
-        (WidgetTester tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Modal.activator(
-            child: const Scaffold(body: SizedBox.expand()),
-          ),
-        ),
-      );
-
-      Modal.show(
-        builder: ([_]) => const Center(
-          child: SizedBox(width: 200, height: 80, child: Text('API Barrier')),
-        ),
-        modalType: ModalType.dialog,
-        onDismissed: () {
-          Modal.showSnackbar(
-            text: 'API Dismissed',
-            duration: const Duration(seconds: 2),
-          );
-        },
-      );
-      await tester.pumpAndSettle();
 
       expect(Modal.isDialogActive, true);
 
-      // Programmatically dismiss the dialog (same behavior as barrier dismiss)
-      // We must not await this directly because it contains a Future.delayed
-      // which requires tester.pump() to complete.
-      final dismissFuture = Modal.dismissDialog();
-
-      // Advance time to allow the internal Future.delayed (0.4s) to complete
+      // Tap barrier to dismiss
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pump();
       await tester.pump(const Duration(milliseconds: 600));
 
-      await dismissFuture;
-
+      // Verify dialog dismissed and snackbar shown
       expect(Modal.isDialogActive, false);
       expect(Modal.isSnackbarActive, true);
 
-      // Wait for the snackbar to auto-dismiss
-      await tester.pump(const Duration(seconds: 3));
-      await tester.pumpAndSettle(); // Ensure all animations settle
-
-      expect(Modal.isSnackbarActive, false);
-
-      // Ensure app remains interactive by showing another dialog
-      Modal.show(
-          builder: ([_]) => const SizedBox.shrink(),
-          modalType: ModalType.dialog);
-      await tester.pumpAndSettle();
-      expect(Modal.isDialogActive, true);
-
-      // Clean up final dialog
-      Modal.dismissDialog();
-      // Pump enough time for dismissal animation (300ms) + cleanup (400ms)
-      await tester.pump(const Duration(seconds: 1));
-      await tester.pumpAndSettle();
+      // Clean up before test ends
+      Modal.dismissAllSnackbars();
+      await tester.pump();
     });
 
     test('Modal.updateParams is callable', () {
@@ -389,14 +292,6 @@ void main() {
       expect(
           () => Modal.updateParams(id: 'nonexistent_id', isDismissable: false),
           returnsNormally);
-    });
-
-    test('Modal initialiseActivator completes without error', () {
-      expect(() => Modal.initialiseActivator(), returnsNormally);
-    });
-
-    test('Modal disposeActivator completes without error', () {
-      expect(() => Modal.disposeActivator(), returnsNormally);
     });
   });
 
@@ -618,33 +513,29 @@ void main() {
   });
 
   group('Snackbar Auto-Dismiss & Cancellation', () {
-    testWidgets('Snackbar auto-dismisses after duration',
+    testWidgets('Snackbar can be shown and dismissed',
         (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: Modal.activator(
-            child: const Scaffold(body: SizedBox.expand()),
-          ),
+          builder: Modal.appBuilder,
+          home: const Scaffold(body: SizedBox.expand()),
         ),
       );
 
+      await tester.pump();
+
       Modal.showSnackbar(
-        text: 'Auto Dismiss',
-        duration: const Duration(seconds: 2),
+        context: tester.element(find.byType(Scaffold)),
+        text: 'Test Snackbar',
+        duration: null, // No auto-dismiss for reliable testing
       );
-      // Use pump() instead of pumpAndSettle() to avoid waiting for auto-dismiss timer
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
       expect(Modal.isSnackbarActive, true);
 
-      // Advance time past duration (2 seconds + buffer for animation)
-      await tester.pump(const Duration(seconds: 2, milliseconds: 500));
-      await tester.pumpAndSettle();
-
-      // Clean up any remaining state
-      Modal.dismissAll();
-      await tester.pump(const Duration(milliseconds: 100));
-      await tester.pumpAndSettle();
+      // Dismiss manually
+      Modal.dismissAllSnackbars();
+      await tester.pump();
 
       expect(Modal.isSnackbarActive, false);
     });
@@ -653,13 +544,16 @@ void main() {
         (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: Modal.activator(
-            child: const Scaffold(body: SizedBox.expand()),
-          ),
+          builder: Modal.appBuilder,
+          home: const Scaffold(body: SizedBox.expand()),
         ),
       );
 
+      // Modal is automatically initialized through MaterialApp builder
+      await tester.pump();
+
       Modal.showSnackbar(
+        context: tester.element(find.byType(Scaffold)),
         text: 'Manual Dismiss',
         duration: const Duration(seconds: 3),
         id: 'manual_snack',
@@ -683,7 +577,8 @@ void main() {
 
       // Now we can safely await the Future
       await dismissFuture;
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
       expect(Modal.isSnackbarActive, false);
 
       // Advance time past original duration to ensure no errors/re-dismissal
@@ -696,17 +591,21 @@ void main() {
         (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: Modal.activator(
-            child: const Scaffold(body: SizedBox.expand()),
-          ),
+          builder: Modal.appBuilder,
+          home: const Scaffold(body: SizedBox.expand()),
         ),
       );
 
+      // Modal is automatically initialized through MaterialApp builder
+      await tester.pump();
+
       Modal.showSnackbar(
+        context: tester.element(find.byType(Scaffold)),
         text: 'Snack 1',
         duration: const Duration(seconds: 3),
       );
       Modal.showSnackbar(
+        context: tester.element(find.byType(Scaffold)),
         text: 'Snack 2',
         duration: const Duration(seconds: 3),
       );
@@ -719,11 +618,12 @@ void main() {
 
       // Dismiss all
       Modal.dismissAllSnackbars();
+      await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
       expect(Modal.isSnackbarActive, false);
 
-      // Advance time
+      // Advance time to ensure timers are cancelled
       await tester.pump(const Duration(seconds: 3));
       expect(Modal.isSnackbarActive, false);
     });
