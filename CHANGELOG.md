@@ -1,3 +1,7 @@
+## 2.1.1
+
+- **UPDATED**: Added debug assert to catch missing `Modal.appBuilder` setup
+
 ## 2.1.0
 
 - **FIXED**: Widgets requiring an `Overlay` ancestor (like `Slider`, `TextField`, `DropdownButton`) now work correctly inside modals

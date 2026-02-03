@@ -53,7 +53,7 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  s_modal: ^2.1.0
+  s_modal: ^2.1.1
 ```
 
 Then run:
@@ -86,6 +86,8 @@ class MyApp extends StatelessWidget {
   }
 }
 ```
+
+    > **Note:** In debug builds, `Modal.show` will assert if `Modal.appBuilder` is not installed.
 
 **Optional:** For advanced customization:
 

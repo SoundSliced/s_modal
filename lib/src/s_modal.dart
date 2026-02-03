@@ -1493,6 +1493,12 @@ class Modal {
   // Internal installation / bootstrap
   //==================================================
 
+  /// Tracks whether Modal.appBuilder has been installed in the widget tree.
+  ///
+  /// This is set when [appBuilder] runs and is used to provide fast feedback
+  /// in debug builds if the app forgot to wrap `MaterialApp.builder`.
+  static bool _appBuilderInstalled = false;
+
   /// Hook for `MaterialApp.builder` / `WidgetsApp.builder`.
   ///
   /// This is the supported way to ensure `_ActivatorWidget` becomes a **parent**
@@ -1524,6 +1530,12 @@ class Modal {
     /// Whether to show debug prints for modal events
     bool showDebugPrints = false,
   }) {
+    assert(
+      child != null,
+      'Modal.appBuilder requires the MaterialApp/WidgetsApp builder child. '
+      'Make sure your app builder passes the provided child into Modal.appBuilder.',
+    );
+    _appBuilderInstalled = true;
     _showDebugPrints = showDebugPrints;
     return _ActivatorWidget(
       borderRadius: borderRadius ?? BorderRadius.zero,
@@ -1922,6 +1934,12 @@ class Modal {
       debugPrint(
           'Modal.show called: type=${modalContent.modalType}, id=${modalContent.uniqueId}');
     }
+
+    assert(
+      _appBuilderInstalled,
+      'Modal.appBuilder must be set on MaterialApp.builder (or WidgetsApp.builder) '
+      'before showing modals. Wrap your app builder with Modal.appBuilder.',
+    );
 
     // AUTO-UPDATE FEATURE: Check if a modal of the same type with the same user-provided ID
     // is already active. If so, use updateParams instead of replacing the modal.
