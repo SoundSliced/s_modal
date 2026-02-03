@@ -1171,6 +1171,80 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                 ),
               ),
+              const SizedBox(height: 24),
+
+              // Overlay Widgets Showcase Section
+              Text(
+                'Overlay Widgets Showcase',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 12),
+
+              Card(
+                elevation: 2,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Widgets requiring Overlay ancestor',
+                          style: Theme.of(context).textTheme.titleSmall),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Demonstrates Slider, TextField, DropdownButton working correctly inside modals',
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Slider in Bottom Sheet
+                      GestureDetector(
+                        onTap: _showSliderBottomSheet,
+                        child: _buildCardButton(
+                          icon: Icons.linear_scale,
+                          text: 'Slider in Bottom Sheet',
+                          subtitle: 'Slider with value indicator tooltip',
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+
+                      // TextField in Dialog
+                      GestureDetector(
+                        onTap: _showTextFieldDialog,
+                        child: _buildCardButton(
+                          icon: Icons.text_fields,
+                          text: 'TextField in Dialog',
+                          subtitle: 'Text input with autocomplete',
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+
+                      // DropdownButton in Bottom Sheet
+                      GestureDetector(
+                        onTap: _showDropdownBottomSheet,
+                        child: _buildCardButton(
+                          icon: Icons.arrow_drop_down_circle,
+                          text: 'DropdownButton in Bottom Sheet',
+                          subtitle: 'Dropdown menu displays correctly',
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Combined Widgets Demo
+                      GestureDetector(
+                        onTap: _showCombinedWidgetsDialog,
+                        child: _buildCardButton(
+                          icon: Icons.widgets,
+                          text: 'Combined Widgets Demo',
+                          subtitle: 'All overlay widgets in one modal',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -2899,6 +2973,604 @@ class _MyHomePageState extends State<MyHomePage> {
 
       return true;
     });
+  }
+
+  // ============================================
+  // Overlay Widgets Showcase
+  // ============================================
+
+  /// Demonstrates Slider with value indicator tooltip working inside a modal
+  void _showSliderBottomSheet() {
+    double sliderValue = 50.0;
+
+    Modal.show(
+      id: 'slider_sheet',
+      builder: () => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade100,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(Icons.linear_scale,
+                          size: 28, color: Colors.blue.shade700),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Slider Demo',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            'Value indicator tooltip works!',
+                            style: TextStyle(color: Colors.grey.shade600),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 32),
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.blue.shade100),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        sliderValue.toInt().toString(),
+                        style: TextStyle(
+                          fontSize: 48,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue.shade700,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      SliderTheme(
+                        data: SliderTheme.of(context).copyWith(
+                          showValueIndicator: ShowValueIndicator.onDrag,
+                          valueIndicatorTextStyle: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        child: Slider(
+                          value: sliderValue,
+                          min: 0,
+                          max: 100,
+                          divisions: 100,
+                          label: sliderValue.toInt().toString(),
+                          onChanged: (value) {
+                            setModalState(() => sliderValue = value);
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Drag the slider to see the value indicator!',
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () => Modal.dismissBottomSheet(),
+                  child: const Text('Close'),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+      modalType: ModalType.sheet,
+      size: 360,
+      shouldBlurBackground: _globalBlur,
+      isDismissable: _globalDismissable,
+      blockBackgroundInteraction: _globalBlockBackgroundInteraction,
+    );
+  }
+
+  /// Demonstrates TextField with autocomplete suggestions working inside a dialog
+  void _showTextFieldDialog() {
+    final textController = TextEditingController();
+    final suggestions = [
+      'Apple',
+      'Banana',
+      'Cherry',
+      'Date',
+      'Elderberry',
+      'Fig',
+      'Grape'
+    ];
+
+    Modal.show(
+      id: 'textfield_dialog',
+      builder: () => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Container(
+            width: 350,
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.green.shade200),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade100,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(Icons.text_fields,
+                          size: 24, color: Colors.green.shade700),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'TextField Demo',
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleLarge
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                Autocomplete<String>(
+                  optionsBuilder: (TextEditingValue textEditingValue) {
+                    if (textEditingValue.text.isEmpty) {
+                      return const Iterable<String>.empty();
+                    }
+                    return suggestions.where((option) => option
+                        .toLowerCase()
+                        .contains(textEditingValue.text.toLowerCase()));
+                  },
+                  onSelected: (String selection) {
+                    textController.text = selection;
+                  },
+                  fieldViewBuilder: (context, controller, focusNode, onSubmit) {
+                    return TextField(
+                      controller: controller,
+                      focusNode: focusNode,
+                      decoration: InputDecoration(
+                        labelText: 'Type a fruit name',
+                        hintText: 'e.g., Apple, Banana...',
+                        prefixIcon: const Icon(Icons.search),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey.shade50,
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Autocomplete suggestions appear correctly!',
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 12,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Modal.dismissDialog(),
+                      child: const Text('Cancel'),
+                    ),
+                    const SizedBox(width: 12),
+                    ElevatedButton(
+                      onPressed: () => Modal.dismissDialog(),
+                      child: const Text('Submit'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+      modalType: ModalType.dialog,
+      shouldBlurBackground: _globalBlur,
+      isDismissable: _globalDismissable,
+      blockBackgroundInteraction: _globalBlockBackgroundInteraction,
+    );
+  }
+
+  /// Demonstrates DropdownButton with dropdown menu working inside a bottom sheet
+  void _showDropdownBottomSheet() {
+    String? selectedValue;
+    final items = ['Option 1', 'Option 2', 'Option 3', 'Option 4', 'Option 5'];
+
+    Modal.show(
+      id: 'dropdown_sheet',
+      builder: () => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.purple.shade100,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(Icons.arrow_drop_down_circle,
+                          size: 28, color: Colors.purple.shade700),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Dropdown Demo',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            'Dropdown menu displays correctly!',
+                            style: TextStyle(color: Colors.grey.shade600),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 32),
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.purple.shade50,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.purple.shade100),
+                  ),
+                  child: Column(
+                    children: [
+                      const Text(
+                        'Select an option:',
+                        style: TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.purple.shade200),
+                        ),
+                        child: DropdownButton<String>(
+                          value: selectedValue,
+                          hint: const Text('Choose option'),
+                          isExpanded: true,
+                          underline: const SizedBox(),
+                          borderRadius: BorderRadius.circular(12),
+                          items: items.map((String value) {
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(value),
+                            );
+                          }).toList(),
+                          onChanged: (String? newValue) {
+                            setModalState(() => selectedValue = newValue);
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      if (selectedValue != null)
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.green.shade200),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.check_circle,
+                                  color: Colors.green.shade700, size: 20),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Selected: $selectedValue',
+                                style: TextStyle(
+                                  color: Colors.green.shade700,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () => Modal.dismissBottomSheet(),
+                  child: const Text('Close'),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+      modalType: ModalType.sheet,
+      size: 400,
+      shouldBlurBackground: _globalBlur,
+      isDismissable: _globalDismissable,
+      blockBackgroundInteraction: _globalBlockBackgroundInteraction,
+    );
+  }
+
+  /// Demonstrates all overlay widgets combined in one dialog
+  void _showCombinedWidgetsDialog() {
+    double sliderValue = 50.0;
+    String? dropdownValue;
+    final textController = TextEditingController();
+    final dropdownItems = ['Red', 'Green', 'Blue', 'Yellow', 'Purple'];
+
+    Modal.show(
+      id: 'combined_widgets_dialog',
+      builder: () => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Container(
+            width: 380,
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.indigo.shade200),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.15),
+                  blurRadius: 15,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.indigo.shade400,
+                            Colors.purple.shade400
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.widgets,
+                          size: 24, color: Colors.white),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Combined Widgets',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            'All overlay widgets working!',
+                            style: TextStyle(
+                                color: Colors.grey.shade600, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // Slider
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.linear_scale, size: 18),
+                          const SizedBox(width: 8),
+                          const Text('Slider',
+                              style: TextStyle(fontWeight: FontWeight.w500)),
+                          const Spacer(),
+                          Text(
+                            sliderValue.toInt().toString(),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.indigo.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      SliderTheme(
+                        data: SliderTheme.of(context).copyWith(
+                          showValueIndicator: ShowValueIndicator.onDrag,
+                        ),
+                        child: Slider(
+                          value: sliderValue,
+                          min: 0,
+                          max: 100,
+                          divisions: 100,
+                          label: sliderValue.toInt().toString(),
+                          onChanged: (value) {
+                            setModalState(() => sliderValue = value);
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // TextField
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.text_fields, size: 18),
+                          SizedBox(width: 8),
+                          Text('TextField',
+                              style: TextStyle(fontWeight: FontWeight.w500)),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: textController,
+                        decoration: InputDecoration(
+                          hintText: 'Type something...',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
+                          isDense: true,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Dropdown
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.arrow_drop_down_circle, size: 18),
+                          SizedBox(width: 8),
+                          Text('Dropdown',
+                              style: TextStyle(fontWeight: FontWeight.w500)),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: DropdownButton<String>(
+                          value: dropdownValue,
+                          hint: const Text('Select color'),
+                          isExpanded: true,
+                          underline: const SizedBox(),
+                          borderRadius: BorderRadius.circular(8),
+                          items: dropdownItems.map((String value) {
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(value),
+                            );
+                          }).toList(),
+                          onChanged: (String? newValue) {
+                            setModalState(() => dropdownValue = newValue);
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Modal.dismissDialog(),
+                      child: const Text('Cancel'),
+                    ),
+                    const SizedBox(width: 12),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.check, size: 18),
+                      label: const Text('Done'),
+                      onPressed: () => Modal.dismissDialog(),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+      modalType: ModalType.dialog,
+      shouldBlurBackground: _globalBlur,
+      isDismissable: _globalDismissable,
+      blockBackgroundInteraction: _globalBlockBackgroundInteraction,
+    );
   }
 
   // ============================================

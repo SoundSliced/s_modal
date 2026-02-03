@@ -1,3 +1,11 @@
+## 2.1.0
+
+- **FIXED**: Widgets requiring an `Overlay` ancestor (like `Slider`, `TextField`, `DropdownButton`) now work correctly inside modals
+- **IMPROVED**: Modal content now wrapped with dedicated `Navigator` to provide proper `Overlay` context
+- **IMPROVED**: Added `HeroControllerScope.none` wrapper to prevent `HeroController` conflicts with app's main Navigator
+- **UPDATED**: Replaced deprecated `onPopPage` with `onDidRemovePage` callback
+- **NEW**: Example app now includes "Overlay Widgets Showcase" section demonstrating Slider, TextField, and DropdownButton usage in modals
+
 ## 2.0.0
 
 - **BREAKING**: Removed `Modal.activator()` widget wrapper - replaced with `MaterialApp.builder` integration via `Modal.appBuilder()` as the former isn't appropriate and could cause issues
