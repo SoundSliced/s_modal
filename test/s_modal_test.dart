@@ -7,6 +7,18 @@ import 'package:s_modal/s_modal.dart';
 // Helper builder for tests
 Widget _testBuilder([BuildContext? _]) => const SizedBox();
 
+// Helper to pump a test app with Modal.appBuilder installed
+Future<BuildContext> _pumpTestApp(WidgetTester tester) async {
+  await tester.pumpWidget(
+    MaterialApp(
+      builder: Modal.appBuilder,
+      home: const Scaffold(body: SizedBox.expand()),
+    ),
+  );
+  await tester.pump();
+  return tester.element(find.byType(Scaffold));
+}
+
 void main() {
   tearDown(() {
     // Clean up all modals after each test
@@ -14,32 +26,44 @@ void main() {
   });
 
   group('Modal API Tests', () {
-    test('Modal.show() accepts all ModalType values', () {
+    testWidgets('Modal.show() accepts all ModalType values',
+        (WidgetTester tester) async {
+      final ctx = await _pumpTestApp(tester);
       // These should not throw - just testing API availability
       expect(
-          () => Modal.show(builder: _testBuilder, modalType: ModalType.sheet),
+          () => Modal.show(
+              context: ctx, builder: _testBuilder, modalType: ModalType.sheet),
           returnsNormally);
       expect(
-          () => Modal.show(builder: _testBuilder, modalType: ModalType.sheet),
+          () => Modal.show(
+              context: ctx, builder: _testBuilder, modalType: ModalType.sheet),
           returnsNormally);
       expect(
-          () => Modal.show(builder: _testBuilder, modalType: ModalType.dialog),
+          () => Modal.show(
+              context: ctx, builder: _testBuilder, modalType: ModalType.dialog),
           returnsNormally);
       expect(
-          () => Modal.show(builder: _testBuilder, modalType: ModalType.sheet),
+          () => Modal.show(
+              context: ctx, builder: _testBuilder, modalType: ModalType.sheet),
           returnsNormally);
       expect(
-          () =>
-              Modal.show(builder: _testBuilder, modalType: ModalType.snackbar),
+          () => Modal.show(
+              context: ctx,
+              builder: _testBuilder,
+              modalType: ModalType.snackbar),
           returnsNormally);
       expect(
-          () => Modal.show(builder: _testBuilder, modalType: ModalType.custom),
+          () => Modal.show(
+              context: ctx, builder: _testBuilder, modalType: ModalType.custom),
           returnsNormally);
     });
 
-    test('Modal.show() accepts various configuration parameters', () {
+    testWidgets('Modal.show() accepts various configuration parameters',
+        (WidgetTester tester) async {
+      final ctx = await _pumpTestApp(tester);
       expect(
         () => Modal.show(
+          context: ctx,
           builder: _testBuilder,
           modalType: ModalType.dialog,
           modalPosition: Alignment.center,
@@ -61,44 +85,64 @@ void main() {
       expect(ModalType.values, contains(ModalType.custom));
     });
 
-    test('Modal.show() supports various Alignment values for modalPosition',
-        () {
+    testWidgets(
+        'Modal.show() supports various Alignment values for modalPosition',
+        (WidgetTester tester) async {
+      final ctx = await _pumpTestApp(tester);
       // Test that modalPosition parameter accepts standard Alignment values
       expect(
           () => Modal.show(
-              builder: _testBuilder, modalPosition: Alignment.center),
+              context: ctx,
+              builder: _testBuilder,
+              modalPosition: Alignment.center),
           returnsNormally);
       expect(
           () => Modal.show(
-              builder: _testBuilder, modalPosition: Alignment.topLeft),
+              context: ctx,
+              builder: _testBuilder,
+              modalPosition: Alignment.topLeft),
           returnsNormally);
       expect(
           () => Modal.show(
-              builder: _testBuilder, modalPosition: Alignment.topRight),
+              context: ctx,
+              builder: _testBuilder,
+              modalPosition: Alignment.topRight),
           returnsNormally);
       expect(
           () => Modal.show(
-              builder: _testBuilder, modalPosition: Alignment.bottomLeft),
+              context: ctx,
+              builder: _testBuilder,
+              modalPosition: Alignment.bottomLeft),
           returnsNormally);
       expect(
           () => Modal.show(
-              builder: _testBuilder, modalPosition: Alignment.bottomRight),
+              context: ctx,
+              builder: _testBuilder,
+              modalPosition: Alignment.bottomRight),
           returnsNormally);
       expect(
           () => Modal.show(
-              builder: _testBuilder, modalPosition: Alignment.centerLeft),
+              context: ctx,
+              builder: _testBuilder,
+              modalPosition: Alignment.centerLeft),
           returnsNormally);
       expect(
           () => Modal.show(
-              builder: _testBuilder, modalPosition: Alignment.centerRight),
+              context: ctx,
+              builder: _testBuilder,
+              modalPosition: Alignment.centerRight),
           returnsNormally);
       expect(
           () => Modal.show(
-              builder: _testBuilder, modalPosition: Alignment.topCenter),
+              context: ctx,
+              builder: _testBuilder,
+              modalPosition: Alignment.topCenter),
           returnsNormally);
       expect(
           () => Modal.show(
-              builder: _testBuilder, modalPosition: Alignment.bottomCenter),
+              context: ctx,
+              builder: _testBuilder,
+              modalPosition: Alignment.bottomCenter),
           returnsNormally);
     });
 
@@ -111,28 +155,37 @@ void main() {
   });
 
   group('Modal ID Tests', () {
-    test('Modal.show() with custom ID can be referenced', () {
+    testWidgets('Modal.show() with custom ID can be referenced',
+        (WidgetTester tester) async {
+      final ctx = await _pumpTestApp(tester);
       // Show a modal with a custom ID
-      Modal.show(builder: _testBuilder, id: 'my_custom_id');
+      Modal.show(context: ctx, builder: _testBuilder, id: 'my_custom_id');
 
       // The ID should be tracked
       expect(Modal.isModalActiveById('my_custom_id'), true);
       expect(Modal.allActiveModalIds, contains('my_custom_id'));
 
-      // Cleanup
-      Modal.dismissById('my_custom_id');
+      // Cleanup - start dismissal but await it after pumping to avoid deadlock with Future.delayed
+      final dismissFuture = Modal.dismissById('my_custom_id');
+      await tester.pumpAndSettle();
+      await dismissFuture;
     });
 
-    test('Modal.showSnackbar() supports custom ID parameter', () {
+    testWidgets('Modal.showSnackbar() supports custom ID parameter',
+        (WidgetTester tester) async {
+      final ctx = await _pumpTestApp(tester);
       Modal.showSnackbar(
+        context: ctx,
         text: 'Test message',
         id: 'snackbar_123',
       );
 
       expect(Modal.isModalActiveById('snackbar_123'), true);
 
-      // Cleanup
-      Modal.dismissById('snackbar_123');
+      // Cleanup - start dismissal but await it after pumping to avoid deadlock with Future.delayed
+      final dismissFuture = Modal.dismissById('snackbar_123');
+      await tester.pumpAndSettle();
+      await dismissFuture;
     });
   });
 
@@ -198,9 +251,12 @@ void main() {
       expect(SnackbarDisplayMode.values, contains(SnackbarDisplayMode.replace));
     });
 
-    test('Modal.showSnackbar() accepts configuration parameters', () {
+    testWidgets('Modal.showSnackbar() accepts configuration parameters',
+        (WidgetTester tester) async {
+      final ctx = await _pumpTestApp(tester);
       expect(
         () => Modal.showSnackbar(
+          context: ctx,
           text: 'Test notification',
           position: Alignment.topCenter,
           duration: const Duration(seconds: 3),
@@ -310,20 +366,25 @@ void main() {
   });
 
   group('Modal API Parameter Tests', () {
-    test('Modal.show() accepts size parameter', () {
+    testWidgets('Modal.show() accepts size parameter',
+        (WidgetTester tester) async {
+      final ctx = await _pumpTestApp(tester);
       expect(
-        () => Modal.show(builder: _testBuilder, size: 200),
+        () => Modal.show(context: ctx, builder: _testBuilder, size: 200),
         returnsNormally,
       );
       expect(
-        () => Modal.show(builder: _testBuilder, size: 600),
+        () => Modal.show(context: ctx, builder: _testBuilder, size: 600),
         returnsNormally,
       );
     });
 
-    test('Modal.show() accepts expandedPercentageSize parameter', () {
+    testWidgets('Modal.show() accepts expandedPercentageSize parameter',
+        (WidgetTester tester) async {
+      final ctx = await _pumpTestApp(tester);
       expect(
         () => Modal.show(
+            context: ctx,
             builder: _testBuilder,
             isExpandable: true,
             expandedPercentageSize: 50),
@@ -331,6 +392,7 @@ void main() {
       );
       expect(
         () => Modal.show(
+            context: ctx,
             builder: _testBuilder,
             isExpandable: true,
             expandedPercentageSize: 100),
@@ -371,31 +433,39 @@ void main() {
   });
 
   group('Callback Tests', () {
-    test('Modal.show() accepts onDismissed callback', () {
+    testWidgets('Modal.show() accepts onDismissed callback',
+        (WidgetTester tester) async {
+      final ctx = await _pumpTestApp(tester);
       bool called = false;
       void callback() {
         called = true;
       }
 
       expect(
-        () => Modal.show(builder: _testBuilder, onDismissed: callback),
+        () => Modal.show(
+            context: ctx, builder: _testBuilder, onDismissed: callback),
         returnsNormally,
       );
     });
 
-    test('Modal.show() accepts onExpanded callback', () {
+    testWidgets('Modal.show() accepts onExpanded callback',
+        (WidgetTester tester) async {
+      final ctx = await _pumpTestApp(tester);
       bool called = false;
       void callback() {
         called = true;
       }
 
       expect(
-        () => Modal.show(builder: _testBuilder, onExpanded: callback),
+        () => Modal.show(
+            context: ctx, builder: _testBuilder, onExpanded: callback),
         returnsNormally,
       );
     });
 
-    test('Modal.show() can accept multiple callbacks', () {
+    testWidgets('Modal.show() can accept multiple callbacks',
+        (WidgetTester tester) async {
+      final ctx = await _pumpTestApp(tester);
       int callCount = 0;
 
       void onDismissed() {
@@ -408,6 +478,7 @@ void main() {
 
       expect(
         () => Modal.show(
+          context: ctx,
           builder: _testBuilder,
           onDismissed: onDismissed,
           onExpanded: onExpanded,
@@ -418,7 +489,9 @@ void main() {
   });
 
   group('Configuration Combinations Tests', () {
-    test('ModalContent supports all valid combinations', () {
+    testWidgets('ModalContent supports all valid combinations',
+        (WidgetTester tester) async {
+      final ctx = await _pumpTestApp(tester);
       final types = ModalType.values;
       final positions = [
         Alignment.center,
@@ -430,6 +503,7 @@ void main() {
       // Test a sample of combinations
       expect(
         () => Modal.show(
+          context: ctx,
           builder: _testBuilder,
           modalType: ModalType.sheet,
           modalPosition: Alignment.bottomCenter,
@@ -440,6 +514,7 @@ void main() {
 
       expect(
         () => Modal.show(
+          context: ctx,
           builder: _testBuilder,
           modalType: ModalType.dialog,
           modalPosition: Alignment.center,
@@ -449,9 +524,12 @@ void main() {
       );
     });
 
-    test('Modal.show() accepts bottom sheet specific configurations', () {
+    testWidgets('Modal.show() accepts bottom sheet specific configurations',
+        (WidgetTester tester) async {
+      final ctx = await _pumpTestApp(tester);
       expect(
         () => Modal.show(
+          context: ctx,
           builder: _testBuilder,
           modalType: ModalType.sheet,
           isExpandable: true,
@@ -463,9 +541,12 @@ void main() {
       );
     });
 
-    test('Modal.show() accepts dialog specific configurations', () {
+    testWidgets('Modal.show() accepts dialog specific configurations',
+        (WidgetTester tester) async {
+      final ctx = await _pumpTestApp(tester);
       expect(
         () => Modal.show(
+          context: ctx,
           builder: _testBuilder,
           modalType: ModalType.dialog,
           modalPosition: Alignment.center,
@@ -478,9 +559,12 @@ void main() {
   });
 
   group('Modal API Default Behavior Tests', () {
-    test('Modal.show() has sensible defaults', () {
+    testWidgets('Modal.show() has sensible defaults',
+        (WidgetTester tester) async {
+      final ctx = await _pumpTestApp(tester);
       // Should not throw when called with only required builder parameter
-      expect(() => Modal.show(builder: _testBuilder), returnsNormally);
+      expect(() => Modal.show(context: ctx, builder: _testBuilder),
+          returnsNormally);
     });
   });
 

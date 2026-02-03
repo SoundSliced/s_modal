@@ -3251,6 +3251,12 @@ class Modal {
     _snackbarStackIndexNotifier.state = 0;
     _staggeredExpandedNotifier.state = null;
 
+    // Explicitly cancel any pending timers to prevent leaks and test failures
+    _backgroundAnimationTimer?.cancel();
+    _backgroundAnimationTimer = null;
+    _snackbarRetryTimer?.cancel();
+    _snackbarRetryTimer = null;
+
     _dialogController.refresh();
     _dialogDismissingNotifier.state = false;
 
