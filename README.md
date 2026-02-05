@@ -178,7 +178,7 @@ Modal.showSnackbar(
   durationTimerDirection: DurationIndicatorDirection.leftToRight,
   durationTimerColor: Colors.cyan,
   isDismissible: true, // Allow swipe-to-dismiss (default)
-  barrierColor: Colors.black.withOpacity(0.2), // Optional barrier
+  barrierColor: Colors.black.withValues(alpha: 0.2), // Optional barrier
 );
 ```
 
@@ -329,7 +329,7 @@ Modal.show(
   builder: () => MyWidget(),
   shouldBlurBackground: true,
   blurAmount: 5.0, // 0-20, higher = more blur
-  barrierColor: Colors.black.withOpacity(0.5),
+  barrierColor: Colors.black.withValues(alpha: 0.5),
   blockBackgroundInteraction: true, // Block taps on background
 );
 ```
