@@ -1,7 +1,4 @@
-import 'package:flutter/material.dart';
-import 'package:s_ink_button/s_ink_button.dart';
 import 'package:s_modal/s_modal.dart';
-import 'package:states_rebuilder/states_rebuilder.dart';
 
 void main() => runApp(const MyApp());
 
