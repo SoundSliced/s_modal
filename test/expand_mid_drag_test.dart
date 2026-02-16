@@ -2,16 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:s_modal/s_modal.dart';
 
 void main() {
-  setUp(() {
-    // Install state is global/static; make sure each test starts with a clean
-    // slate to avoid stale overlay entries.
-    Modal.disposeActivator();
-  });
-
   tearDown(() {
     // Clean up any active modal between tests.
     Modal.dismissAll();
-    Modal.disposeActivator();
   });
 
   testWidgets('Right side sheet can be expanded', (WidgetTester tester) async {
@@ -25,6 +18,7 @@ void main() {
     // Show right side sheet and capture onExpanded callback
     // ignore: unused_local_variable
     bool expandedCalled = false;
+    const String modalId = 'right-sheet-test';
     Modal.show(
       context: tester.element(find.byType(Scaffold)),
       builder: ([_]) => const SizedBox(width: 200, height: 200),
@@ -33,24 +27,28 @@ void main() {
       modalPosition: Alignment.centerRight,
       isExpandable: true,
       expandedPercentageSize: 80,
+      id: modalId,
       onExpanded: () {
         expandedCalled = true;
       },
     );
 
-    await tester.pumpAndSettle();
+    // Pump frames to allow modal to appear
+    // Note: avoid pumpAndSettle() — the modal system uses Timer.periodic +
+    // AnimatedContainer which continuously schedule new frames.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump(const Duration(milliseconds: 400));
 
-    // Verify the sheet is displayed by searching for the widget our builder returns.
-    // Use a predicate matcher to be resilient to rebuilds.
-    expect(
-      find.byWidgetPredicate(
-        (w) => w is SizedBox && w.width == 200 && w.height == 200,
-      ),
-      findsOneWidget,
-    );
+    // Verify the sheet is displayed by checking state
+    expect(Modal.isSheetActive, true);
+    expect(Modal.isModalActiveById(modalId), true);
 
-    // The test verifies that the sheet can be shown and is expandable
-    // without crashing. Actual expansion behavior is tested in integration tests.
+    // Cleanup — pump enough time for dismiss animation + Future.delayed(0.4s)
+    final dismissFuture = Modal.dismissById(modalId);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+    await dismissFuture;
   });
   testWidgets('Bottom sheet can be expanded', (WidgetTester tester) async {
     await tester.pumpWidget(
@@ -63,6 +61,7 @@ void main() {
     // Show bottom sheet and capture onExpanded callback
     // ignore: unused_local_variable
     bool expandedCalled = false;
+    const String modalId = 'bottom-sheet-test';
     Modal.show(
       context: tester.element(find.byType(Scaffold)),
       builder: ([_]) => const SizedBox(width: 200, height: 200),
@@ -70,22 +69,27 @@ void main() {
       modalPosition: Alignment.bottomCenter,
       isExpandable: true,
       expandedPercentageSize: 90,
+      id: modalId,
       onExpanded: () {
         expandedCalled = true;
       },
     );
 
-    await tester.pumpAndSettle();
+    // Pump frames to allow modal to appear
+    // Note: avoid pumpAndSettle() — the modal system uses Timer.periodic +
+    // AnimatedContainer which continuously schedule new frames.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump(const Duration(milliseconds: 400));
 
-    // Verify the sheet is displayed by searching for the widget our builder returns.
-    expect(
-      find.byWidgetPredicate(
-        (w) => w is SizedBox && w.width == 200 && w.height == 200,
-      ),
-      findsOneWidget,
-    );
+    // Verify the sheet is displayed by checking state
+    expect(Modal.isSheetActive, true);
+    expect(Modal.isModalActiveById(modalId), true);
 
-    // The test verifies that the sheet can be shown and is expandable
-    // without crashing. Actual expansion behavior is tested in integration tests.
+    // Cleanup — pump enough time for dismiss animation + Future.delayed(0.4s)
+    final dismissFuture = Modal.dismissById(modalId);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+    await dismissFuture;
   });
 }

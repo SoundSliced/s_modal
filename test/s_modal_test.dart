@@ -160,13 +160,20 @@ void main() {
       // Show a modal with a custom ID
       Modal.show(context: ctx, builder: _testBuilder, id: 'my_custom_id');
 
+      // Pump frames to allow modal to appear
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
       // The ID should be tracked
       expect(Modal.isModalActiveById('my_custom_id'), true);
       expect(Modal.allActiveModalIds, contains('my_custom_id'));
 
-      // Cleanup - start dismissal but await it after pumping to avoid deadlock with Future.delayed
+      // Cleanup — pump enough time for dismiss animation + Future.delayed(0.4s)
+      // Note: avoid pumpAndSettle() — the modal system uses Timer.periodic +
+      // AnimatedContainer which continuously schedule new frames.
       final dismissFuture = Modal.dismissById('my_custom_id');
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
       await dismissFuture;
     });
 
@@ -179,11 +186,18 @@ void main() {
         id: 'snackbar_123',
       );
 
+      // Pump frames to allow snackbar to appear
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
       expect(Modal.isModalActiveById('snackbar_123'), true);
 
-      // Cleanup - start dismissal but await it after pumping to avoid deadlock with Future.delayed
+      // Cleanup — pump enough time for dismiss animation
+      // Note: avoid pumpAndSettle() — the modal system uses Timer.periodic +
+      // AnimatedContainer which continuously schedule new frames.
       final dismissFuture = Modal.dismissById('snackbar_123');
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
       await dismissFuture;
     });
   });

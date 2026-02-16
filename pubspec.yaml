@@ -12,7 +12,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  s_packages: ^1.4.1
+  s_packages: ^1.4.2
+
 
 dev_dependencies:
   flutter_test:
