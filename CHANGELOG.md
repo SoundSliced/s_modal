@@ -1,4 +1,13 @@
 
+
+## 4.0.0
+- `s_packages` dependency upgraded
+- **BREAKING:** Renamed `showSuffixIcon` parameter to `showCloseIcon` in `Modal.showSnackbar()`
+- Replaced barrier `SBounceable` with `SInkButton` for ink-splash feedback and long-press dismiss support
+- Improved snackbar default layout: text uses `Flexible` instead of `Expanded`, consistent spacing/alignment
+- Added `Modal.isAppBuilderInstalled` public getter — allows other packages to check whether `Modal.appBuilder` has already been installed in the widget tree
+- Made `Modal.appBuilder` idempotent — calling it more than once now safely returns the child as-is instead of double-nesting the internal `_ActivatorWidget`
+
 ## 3.0.0
 - package no longer holds the source code for it, but exports/exposes the `s_packages` package instead, which will hold this package's latest source code.
 - The only future changes to this package will be made via `s_packages` package dependency upgrades, in order to bring the new fixes or changes to this package

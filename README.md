@@ -53,7 +53,7 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  s_modal: ^3.0.0
+  s_modal: ^4.0.0
 ```
 
 Then run:
@@ -61,6 +61,18 @@ Then run:
 ```bash
 flutter pub get
 ```
+
+> **What's New in v4.1.0:**
+>
+> - `Modal.isAppBuilderInstalled` public getter — check whether `Modal.appBuilder` has already been installed in the widget tree
+> - `Modal.appBuilder` is now idempotent — calling it more than once safely returns the child as-is instead of double-nesting
+> - See [CHANGELOG](CHANGELOG.md) for full details
+
+> **⚠️ BREAKING CHANGES in v4.0.0:**
+>
+> - `showSuffixIcon` parameter in `Modal.showSnackbar()` renamed to `showCloseIcon`
+> - Barrier now uses `SInkButton` instead of `SBounceable` (ink-splash feedback + long-press dismiss)
+> - See [CHANGELOG](CHANGELOG.md) for full details
 
 > **⚠️ BREAKING CHANGES in v2.0.0:**
 >
@@ -87,7 +99,9 @@ class MyApp extends StatelessWidget {
 }
 ```
 
-    > **Note:** In debug builds, `Modal.show` will assert if `Modal.appBuilder` is not installed.
+> **Note:** In debug builds, `Modal.show` will assert if `Modal.appBuilder` is not installed.
+> `Modal.appBuilder` is idempotent — if it's already installed, calling it again safely returns the child as-is.
+> You can check installation status with `Modal.isAppBuilderInstalled`.
 
 **Optional:** For advanced customization:
 
@@ -407,6 +421,7 @@ counter.state++;
 | `Modal.dismissAll()`    | Dismiss all modals                             |
 | `Modal.dismissByType()` | Dismiss all modals of a specific type          |
 | `Modal.updateParams()`  | Update modal properties in real-time           |
+| `Modal.isAppBuilderInstalled` | Check if `Modal.appBuilder` is installed |
 
 ### State Checks
 
@@ -454,7 +469,7 @@ Version 2.0.0 has minimal dependencies:
 - `flutter_animate` ^4.5.2 - Smooth animations
 - `soundsliced_dart_extensions` ^1.0.1 - Dart extensions
 - `s_bounceable` ^2.0.0 - Bounce interactions
-- `s_ink_button` ^1.1.0 - Ink button widget
+- `s_ink_button` ^2.0.0 - Ink button widget (used for barrier interactions)
 
 **Removed in v2.0:**
 
