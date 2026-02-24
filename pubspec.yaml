@@ -2,7 +2,7 @@ name: s_modal
 description: A package for displaying highly customizable modal overlays including sheets, dialogs, and snackbars... with independent lifecycle management.
 issue_tracker: https://github.com/SoundSliced/s_modal/issues
 repository: https://github.com/SoundSliced/s_modal
-version: 4.0.0
+version: 4.1.0
 homepage: https://github.com/SoundSliced/s_modal
 
 environment:
@@ -12,7 +12,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  s_packages: ^1.4.2
+  s_packages: ^2.1.0
 
 
 dev_dependencies:
