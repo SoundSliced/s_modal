@@ -1,3 +1,7 @@
+## 4.1.1
+- **Removed idempotent guard in `Modal.appBuilder()`**: Previously, calling `appBuilder` more than once (e.g. during hot reload) would skip reinstallation to avoid double-nesting `_ActivatorWidget`. This guard has been removed so that `appBuilder` always installs a fresh activator widget, fixing cases where hot reload could leave the modal system in a stale state.
+- **Code formatting**: Applied Dart formatter across the file for consistency.
+
 ## 4.1.0
 - `s_packages` dependency upgraded
 - **Synchronized Barrier & Modal Dismissal**: The background barrier now fades out in perfect sync with the modal content (Dialogs, BottomSheets, Snackbars). No more lingering barriers or premature disappearances.
