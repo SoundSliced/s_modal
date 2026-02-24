@@ -199,6 +199,12 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 600));
       await dismissFuture;
+
+      // Additional pumps to allow background animation timer to complete
+      // The periodic timer needs sufficient time to finish its animation cycle
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump(const Duration(milliseconds: 500));
     });
   });
 
@@ -661,21 +667,19 @@ void main() {
       expect(Modal.isSnackbarActive, true);
 
       // Dismiss manually before timer expires
-      // Start the dismissal but don't await yet - we need to pump frames for the animation
       final dismissFuture = Modal.dismissById('manual_snack');
 
-      // Pump frames to allow the animation to progress
-      // The animation needs frames to complete, so we pump while the Future is pending
+      // Pump frames to allow the animation to progress and complete
       await tester.pump(); // Initial frame
       await tester
           .pump(const Duration(milliseconds: 100)); // Animation progress
       await tester
-          .pump(const Duration(milliseconds: 300)); // Animation completion
-
-      // Now we can safely await the Future
+          .pump(const Duration(milliseconds: 600)); // Animation completion
       await dismissFuture;
+
+      // Additional pumps to ensure complete dismissal and state update
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 500));
       expect(Modal.isSnackbarActive, false);
 
       // Advance time past original duration to ensure no errors/re-dismissal
