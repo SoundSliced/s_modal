@@ -1,3 +1,13 @@
+## [5.2.0]
+- `s_packages` dependency upgraded to ^3.3.0
+  - `s_modal` stack layering and runtime robustness improvements
+    - Added `stackLevel` support across modal creation/update paths (`ModalBuilder`, `Modal.show`, `Modal.showSnackbar`, `Modal.updateParams`).
+    - Added stack-level constants and guidance: `ModalStackLevels`, `ModalStackLevelBands`.
+    - Added modal stack APIs: `activeIdsByStackOrder`, `topMostActiveId`, `getStackLevel`, `setStackLevel`, `bringToFront`, and `sendToBack`.
+    - Added viewport-aware sizing helpers (`_ModalViewportScope`, `_modalViewportSizeOf`) to better handle framed/responsive layouts and swipe thresholds.
+    - Improved dismiss-all scheduling safety by deferring only during frame-critical scheduler phases and preventing duplicate deferred callbacks.
+    - Improved snackbar visuals and consistency (entrance timing/barrier fade synchronization, viewport-based gesture calculations).
+
 ## [5.1.0]
 - `s_packages` dependency upgraded to ^3.1.0
   - internal `SInkButton` widget's splash visual effect improved
