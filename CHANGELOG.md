@@ -1,3 +1,6 @@
+## [5.2.1]
+- pubspec.yaml updated
+
 ## [5.2.0]
 - `s_packages` dependency upgraded to ^3.3.0
   - `s_modal` stack layering and runtime robustness improvements
