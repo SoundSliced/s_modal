@@ -1,3 +1,8 @@
+## [5.2.2]
+- `s_packages` dependency upgraded to ^3.4.0
+  - internal `SInkButton` widgets now show the click cursor on web/desktop hover, giving clearer visual feedback that the widget is interactive.
+    - Disabled `SInkButton` widgets keep the basic cursor so non-interactive states remain visually distinct.
+
 ## [5.2.1]
 - pubspec.yaml updated
 
