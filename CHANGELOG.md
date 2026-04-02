@@ -1,3 +1,46 @@
+
+## 6.0.0
+- **`s_modoverlay` interleaving architecture hardening (modal + pop overlay coexistence):**
+  - Stabilized shared interleaving behavior between `s_modal` and `pop_overlay` so both systems can coexist in a single overlay stack with deterministic ordering.
+  - Consolidated root-overlay resolution paths to avoid duplicated host-resolution logic and reduce divergence risk.
+  - Improved host lifecycle safety to avoid duplicate interleaved host installation and unintended layer remounts during overlay reordering.
+  - Improved layer identity stability in interleaved rendering paths so active overlays (notably snackbars) are not remounted when unrelated layers are added/removed.
+
+- **Stack-level synchronization fixes:**
+  - Fixed `pop_overlay` stack-level mutations (`setStackLevel`, `bringToFront`, `sendToBack`) so interleaved layers are re-registered with updated effective levels immediately.
+  - Preserved ordering consistency between activation order and stack level across interleaved updates.
+
+- **`s_modal` lifecycle and dismissal robustness improvements:**
+  - Improved dialog/sheet/snackbar coordination during dismiss flows to reduce race conditions across mixed overlay scenarios.
+  - Hardened snackbar-controller lifecycle behavior during interleaved modal transitions.
+  - Applied additional cleanup/guard logic around dismiss paths to keep active-state transitions deterministic.
+
+- **Lifecycle observability and event filtering API additions:**
+  - Added public lifecycle event types and payloads: `ModalLifecycleEventType`, `ModalLifecycleEvent`.
+  - Added optional `Modal.appBuilder(...)` lifecycle hooks: `onModalCreated`, `onModalDismissed`.
+  - Added lifecycle filtering in `appBuilder`: `lifecycleModalTypes` and `shouldNotify`.
+  - Added lifecycle listener management APIs: `Modal.addLifecycleListener(...)`, `Modal.removeLifecycleListener(...)`, and `Modal.clearLifecycleListeners()`.
+
+- **Custom modal integration hardening:**
+  - Promoted `ModalType.custom` to a first-class flow in interleaving/show/dismiss paths.
+  - Added/solidified custom modal state checks and cleanup behavior (`Modal.isCustomActive`) to keep mixed-layer dismiss transitions deterministic.
+
+- **Interleaved barrier and host management improvements:**
+  - Added single barrier-owner resolution via `OverlayInterleaveManager.topBarrierOwnerLayerId(...)` to avoid compounded backdrop opacity and barrier flicker when multiple layers coexist.
+  - Added `OverlayInterleaveManager.teardownHost(...)` for reliable hard-reset cleanup in teardown/test scenarios.
+
+- **Dismiss API coverage expansion:**
+  - Added/solidified targeted dismissal helpers for complex mixed-layer flows: `Modal.dismissCurrentModal(...)`, `Modal.dismissSnackbarAtPosition(...)`, `Modal.dismissByIds(...)`, and `Modal.dismissByType(...)`.
+
+- **Testing and reliability:**
+  - Fixed the hanging snackbar/modal interaction regression in `test/modal_background_interaction_test.dart` by using deterministic pump timing around async dismissal flows.
+  - Improved timing stability in modal background interaction tests where long-running animation controllers can make `pumpAndSettle()` non-terminating.
+  - Preserved and validated overlay ordering and interleaving behavior through the existing stack-ordering test coverage.
+  - Added regression coverage for lifecycle callback/listener filtering/removal and barrier-owner policy behavior across interleaved layers.
+
+- **Developer-experience cleanup:**
+  - Commented out verbose `s_modoverlay` runtime debug logs (`[Modal]`, `[OverlayInterleave]`, `[PopOverlay]`, `[snackbar_debug]`, and escape-key diagnostics) to keep console/test output clean by default.
+
 ## [5.2.2]
 - `s_packages` dependency upgraded to ^3.4.0
   - internal `SInkButton` widgets now show the click cursor on web/desktop hover, giving clearer visual feedback that the widget is interactive.

@@ -53,7 +53,7 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  s_modal: ^5.2.2
+  s_modal: ^6.0.0
 ```
 
 Then run:
